@@ -1,6 +1,14 @@
 import asyncio
-import logging
 import threading
+
+# 👇 Yeh line Pyrogram import hone se pehle event loop set kar degi (Python 3.14 Fix)
+try:
+    asyncio.get_event_loop()
+except RuntimeError:
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
+import logging
 from flask import Flask, jsonify
 from flask_cors import CORS
 from pyrogram import Client
@@ -43,14 +51,8 @@ async def main():
     await asyncio.Event().wait()
 
 if __name__ == "__main__":
-    # Python 3.14 event loop fix for MainThread
     try:
-        loop = asyncio.get_event_loop_policy().get_event_loop()
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-
-    try:
+        loop = asyncio.get_event_loop()
         loop.run_until_complete(main())
     except KeyboardInterrupt:
         logging.info("🛑 Bot stopped by user.")
