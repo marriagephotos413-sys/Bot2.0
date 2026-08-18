@@ -3,3 +3,5 @@ tgcrypto
 motor
 flask
 flask-cors
+pymongo
+pandas
