@@ -655,3 +655,4 @@ async def json_handler(client, message):
 if __name__ == "__main__":
     threading.Thread(target=run_flask, daemon=True).start()
     app.run()
+
