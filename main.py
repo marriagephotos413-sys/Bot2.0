@@ -1,14 +1,15 @@
 import asyncio
 import logging
+import threading
 from flask import Flask, jsonify
 from flask_cors import CORS
 from pyrogram import Client
-from config import API_ID, API_HASH, BOT_TOKEN, MONGO_URI
+from config import API_ID, API_HASH, BOT_TOKEN
 
 # Logging Setup
 logging.basicConfig(level=logging.INFO)
 
-# Flask App Initialization (Web Dashboard/API ke liye)
+# Flask App Initialization
 flask_app = Flask(__name__)
 CORS(flask_app)
 
@@ -17,7 +18,6 @@ def home():
     return jsonify({"status": "Startup Bot & Web API is running successfully!"})
 
 def run_flask():
-    # Render ya local server ke liye port configuration
     flask_app.run(host="0.0.0.0", port=5000, debug=False, use_reloader=False)
 
 # Pyrogram Bot Initialization
@@ -30,7 +30,6 @@ app = Client(
 
 async def main():
     # Flask ko background thread mein start karein
-    import threading
     flask_thread = threading.Thread(target=run_flask)
     flask_thread.daemon = True
     flask_thread.start()
@@ -40,13 +39,18 @@ async def main():
     await app.start()
     logging.info("🤖 Telegram Bot started successfully...")
     
-    # Bot ko chalate rakhne ke liye
-    await asyncio.gather(
-        asyncio.Event().wait()
-    )
+    # Bot ko chalate rakhne ke liye infinite await
+    await asyncio.Event().wait()
 
 if __name__ == "__main__":
+    # Python 3.14 event loop fix for MainThread
     try:
-        asyncio.run(main())
+        loop = asyncio.get_event_loop_policy().get_event_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+    try:
+        loop.run_until_complete(main())
     except KeyboardInterrupt:
         logging.info("🛑 Bot stopped by user.")
