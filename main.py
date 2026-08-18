@@ -1,21 +1,29 @@
 import asyncio
 import threading
 
-# 👇 Yeh line Pyrogram import hone se pehle event loop set kar degi (Python 3.14 Fix)
+# 👇 Python 3.14 Event Loop Fix (Pyrogram import hone se pehle)
 try:
     asyncio.get_event_loop()
 except RuntimeError:
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
 
+import os
 import logging
 from flask import Flask, jsonify
 from flask_cors import CORS
 from pyrogram import Client
-from config import API_ID, API_HASH, BOT_TOKEN
 
 # Logging Setup
 logging.basicConfig(level=logging.INFO)
+
+# 🌐 Render Environment Variables se values read karna
+API_ID_RAW = os.getenv("API_ID")
+API_ID = int(API_ID_RAW) if API_ID_RAW and API_ID_RAW.isdigit() else None
+API_HASH = os.getenv("API_HASH")
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+MONGO_URI = os.getenv("MONGO_URI")
+ADMIN_USER_ID = os.getenv("ADMIN_USER_ID")
 
 # Flask App Initialization
 flask_app = Flask(__name__)
