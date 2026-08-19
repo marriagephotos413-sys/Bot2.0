@@ -1,4 +1,3 @@
-import asyncio
 import logging
 import os
 import threading
@@ -43,51 +42,33 @@ logging.basicConfig(
     level=logging.INFO,
 )
 
-logger = logging.getLogger(
-    "telegram-test-series-bot"
-)
+logger = logging.getLogger("telegram-test-series-bot")
 
 
 # ============================================================
 # ENVIRONMENT
 # ============================================================
 
-BOT_TOKEN = os.getenv(
-    "BOT_TOKEN",
-    ""
-)
+BOT_TOKEN = os.getenv("BOT_TOKEN", "")
 
-PORT = int(
-    os.getenv(
-        "PORT",
-        "10000",
-    )
-)
+PORT = int(os.getenv("PORT", "10000"))
 
 
 # ============================================================
 # HEALTH SERVER
 # ============================================================
 
-class HealthHandler(
-    BaseHTTPRequestHandler
-):
+class HealthHandler(BaseHTTPRequestHandler):
 
     def do_GET(self):
 
-        if self.path in (
-            "/",
-            "/health",
-        ):
+        if self.path in ("/", "/health"):
 
             body = (
-                b"Telegram Test Series Bot "
-                b"is running."
+                b"Telegram Test Series Bot is running."
             )
 
-            self.send_response(
-                200
-            )
+            self.send_response(200)
 
             self.send_header(
                 "Content-Type",
@@ -101,33 +82,21 @@ class HealthHandler(
 
             self.end_headers()
 
-            self.wfile.write(
-                body
-            )
+            self.wfile.write(body)
 
             return
 
-        self.send_response(
-            404
-        )
-
+        self.send_response(404)
         self.end_headers()
 
-    def log_message(
-        self,
-        format,
-        *args,
-    ):
+    def log_message(self, format, *args):
         return
 
 
 def start_health_server():
 
     server = HTTPServer(
-        (
-            "0.0.0.0",
-            PORT,
-        ),
+        ("0.0.0.0", PORT),
         HealthHandler,
     )
 
@@ -157,7 +126,39 @@ def validate_environment():
 
 
 # ============================================================
-# CALLBACK ROUTER
+# SAFE HANDLER CALL
+# ============================================================
+
+async def safe_callback_handler(
+    handler,
+    update,
+    context,
+    name="handler",
+):
+    try:
+
+        result = handler(
+            update,
+            context,
+        )
+
+        if hasattr(result, "__await__"):
+            await result
+
+        return True
+
+    except Exception:
+
+        logger.exception(
+            "%s callback failed.",
+            name,
+        )
+
+        return False
+
+
+# ============================================================
+# MAIN CALLBACK ROUTER
 # ============================================================
 
 async def callback_router(
@@ -170,135 +171,362 @@ async def callback_router(
     if not query:
         return
 
-    data = (
-        query.data
-        or ""
-    )
+    data = query.data or ""
+
+    # --------------------------------------------------------
+    # ANSWER CALLBACK
+    # --------------------------------------------------------
 
     try:
-
         await query.answer()
-
     except Exception:
-
         pass
 
-    # --------------------------------------------------------
+    logger.info(
+        "Callback received: %s",
+        data,
+    )
+
+    # ========================================================
+    # MENU
+    # ========================================================
+
+    if data.startswith("menu:"):
+
+        menu_type = data.split(":", 1)[1]
+
+        # ----------------------------------------------------
+        # User info
+        # ----------------------------------------------------
+
+        if menu_type == "userinfo":
+
+            if hasattr(
+                user_handlers,
+                "userinfo",
+            ):
+
+                await safe_callback_handler(
+                    user_handlers.userinfo,
+                    update,
+                    context,
+                    "userinfo",
+                )
+
+            elif hasattr(
+                user_handlers,
+                "user_info",
+            ):
+
+                await safe_callback_handler(
+                    user_handlers.user_info,
+                    update,
+                    context,
+                    "user_info",
+                )
+
+            else:
+
+                logger.warning(
+                    "userinfo handler not found."
+                )
+
+            return
+
+        # ----------------------------------------------------
+        # Premium
+        # ----------------------------------------------------
+
+        if menu_type == "premium":
+
+            if hasattr(
+                user_handlers,
+                "premium",
+            ):
+
+                await safe_callback_handler(
+                    user_handlers.premium,
+                    update,
+                    context,
+                    "premium",
+                )
+
+            elif hasattr(
+                payment_handlers,
+                "premium",
+            ):
+
+                await safe_callback_handler(
+                    payment_handlers.premium,
+                    update,
+                    context,
+                    "premium",
+                )
+
+            else:
+
+                logger.warning(
+                    "premium handler not found."
+                )
+
+            return
+
+        # ----------------------------------------------------
+        # Trial
+        # ----------------------------------------------------
+
+        if menu_type == "trial":
+
+            if hasattr(
+                user_handlers,
+                "trial",
+            ):
+
+                await safe_callback_handler(
+                    user_handlers.trial,
+                    update,
+                    context,
+                    "trial",
+                )
+
+            elif hasattr(
+                extract_handlers,
+                "trial",
+            ):
+
+                await safe_callback_handler(
+                    extract_handlers.trial,
+                    update,
+                    context,
+                    "trial",
+                )
+
+            else:
+
+                logger.warning(
+                    "trial handler not found."
+                )
+
+            return
+
+        # ----------------------------------------------------
+        # Price
+        # ----------------------------------------------------
+
+        if menu_type == "price":
+
+            if hasattr(
+                payment_handlers,
+                "price",
+            ):
+
+                await safe_callback_handler(
+                    payment_handlers.price,
+                    update,
+                    context,
+                    "price",
+                )
+
+            elif hasattr(
+                payment_handlers,
+                "show_price",
+            ):
+
+                await safe_callback_handler(
+                    payment_handlers.show_price,
+                    update,
+                    context,
+                    "show_price",
+                )
+
+            else:
+
+                logger.warning(
+                    "price handler not found."
+                )
+
+            return
+
+        # ----------------------------------------------------
+        # Report
+        # ----------------------------------------------------
+
+        if menu_type == "report":
+
+            if hasattr(
+                admin_handlers,
+                "report",
+            ):
+
+                await safe_callback_handler(
+                    admin_handlers.report,
+                    update,
+                    context,
+                    "report",
+                )
+
+            elif hasattr(
+                admin_handlers,
+                "stats",
+            ):
+
+                await safe_callback_handler(
+                    admin_handlers.stats,
+                    update,
+                    context,
+                    "stats",
+                )
+
+            else:
+
+                logger.warning(
+                    "report handler not found."
+                )
+
+            return
+
+        # ----------------------------------------------------
+        # Unknown menu
+        # ----------------------------------------------------
+
+        logger.warning(
+            "Unhandled menu callback: %s",
+            data,
+        )
+
+        return
+
+    # ========================================================
     # UPLOAD
-    # --------------------------------------------------------
+    # ========================================================
 
-    if data.startswith(
-        "upload:"
-    ):
+    if data.startswith("upload:"):
 
-        await upload_handlers.handle_callback(
+        await safe_callback_handler(
+            upload_handlers.handle_callback,
             update,
             context,
+            "upload",
         )
 
         return
 
-    # --------------------------------------------------------
+    # ========================================================
     # INDEX
-    # --------------------------------------------------------
+    # ========================================================
 
     if (
-        data.startswith(
-            "index:"
-        )
-        or data.startswith(
-            "category:"
-        )
-        or data.startswith(
-            "exam:"
-        )
-        or data.startswith(
-            "type:"
-        )
-        or data.startswith(
-            "year:"
-        )
-        or data.startswith(
-            "test:"
-        )
+        data.startswith("index:")
+        or data.startswith("category:")
+        or data.startswith("exam:")
+        or data.startswith("type:")
+        or data.startswith("year:")
     ):
 
-        await index_handlers.handle_callback(
+        await safe_callback_handler(
+            index_handlers.handle_callback,
             update,
             context,
+            "index",
         )
 
         return
 
-    # --------------------------------------------------------
+    # ========================================================
+    # TEST
+    # ========================================================
+
+    if data.startswith("test:"):
+
+        # Test callbacks are handled by index handler
+        # unless extraction handler explicitly owns it.
+
+        if hasattr(
+            index_handlers,
+            "handle_callback",
+        ):
+
+            await safe_callback_handler(
+                index_handlers.handle_callback,
+                update,
+                context,
+                "test",
+            )
+
+        return
+
+    # ========================================================
     # PAYMENT
-    # --------------------------------------------------------
+    # ========================================================
 
-    if data.startswith(
-        "payment:"
-    ):
+    if data.startswith("payment:"):
 
-        await payment_handlers.handle_callback(
+        await safe_callback_handler(
+            payment_handlers.handle_callback,
             update,
             context,
+            "payment",
         )
 
         return
 
-    # --------------------------------------------------------
+    # ========================================================
     # ADMIN
-    # --------------------------------------------------------
+    # ========================================================
 
-    if data.startswith(
-        "admin:"
-    ):
+    if data.startswith("admin:"):
 
-        await admin_handlers.handle_callback(
+        await safe_callback_handler(
+            admin_handlers.handle_callback,
             update,
             context,
+            "admin",
         )
 
         return
 
-    # --------------------------------------------------------
+    # ========================================================
     # EXTRACT
-    # --------------------------------------------------------
+    # ========================================================
 
     if (
-        data.startswith(
-            "extract:"
-        )
-        or data.startswith(
-            "retry:"
-        )
+        data.startswith("extract:")
+        or data.startswith("retry:")
+        or data.startswith("retry_extract:")
+        or data.startswith("extract_confirm:")
     ):
 
-        await extract_handlers.handle_callback(
+        await safe_callback_handler(
+            extract_handlers.handle_callback,
             update,
             context,
+            "extract",
         )
 
         return
 
-    # --------------------------------------------------------
+    # ========================================================
     # USER
-    # --------------------------------------------------------
+    # ========================================================
 
     if (
-        data.startswith(
-            "user:"
-        )
-        or data.startswith(
-            "home"
-        )
+        data.startswith("user:")
+        or data == "home"
+        or data.startswith("home:")
     ):
 
-        await user_handlers.handle_callback(
+        await safe_callback_handler(
+            user_handlers.handle_callback,
             update,
             context,
+            "user",
         )
 
         return
+
+    # ========================================================
+    # UNKNOWN CALLBACK
+    # ========================================================
 
     logger.warning(
         "Unhandled callback: %s",
@@ -349,14 +577,8 @@ async def text_router(
 
     try:
 
-        # ----------------------------------------------------
-        # Upload mode
-        # ----------------------------------------------------
-
-        upload_mode = (
-            context.user_data.get(
-                "upload_mode"
-            )
+        upload_mode = context.user_data.get(
+            "upload_mode"
         )
 
         if upload_mode in (
@@ -364,19 +586,13 @@ async def text_router(
             "bulk",
         ):
 
-            handled = (
-                await upload_handlers.handle_text(
-                    update,
-                    context,
-                )
+            handled = await upload_handlers.handle_text(
+                update,
+                context,
             )
 
             if handled:
                 return
-
-        # ----------------------------------------------------
-        # User handler
-        # ----------------------------------------------------
 
         await user_handlers.handle_text(
             update,
@@ -508,26 +724,24 @@ async def error_handler(
     context: ContextTypes.DEFAULT_TYPE,
 ):
 
-    logger.exception(
-        "Unhandled Telegram exception",
+    logger.error(
+        "Unhandled Telegram exception: %s",
+        context.error,
         exc_info=context.error,
     )
 
-    # User को internal error details नहीं भेजेंगे।
-
     try:
 
-        if isinstance(
-            update,
-            Update,
-        ):
+        if isinstance(update, Update):
 
             if update.effective_message:
 
                 await update.effective_message.reply_text(
                     (
-                        "⚠️ अभी server पर load/error आया है।\n\n"
-                        "Please wait करके दोबारा try करें।"
+                        "⚠️ अभी server पर "
+                        "temporary error आया है।\n\n"
+                        "कृपया थोड़ी देर बाद "
+                        "दोबारा try करें।"
                     )
                 )
 
@@ -561,6 +775,10 @@ async def post_init(
             application.bot
         )
 
+        logger.info(
+            "Queue manager initialized."
+        )
+
     except Exception:
 
         logger.exception(
@@ -568,12 +786,75 @@ async def post_init(
         )
 
     # --------------------------------------------------------
-    # Extract processors
+    # Database indexes
     # --------------------------------------------------------
 
     try:
 
-        extract_handlers.register()
+        if hasattr(
+            db,
+            "ensure_indexes",
+        ):
+
+            db.ensure_indexes()
+
+            logger.info(
+                "Database indexes initialized."
+            )
+
+        else:
+
+            logger.warning(
+                "ensure_indexes() not available."
+            )
+
+    except Exception:
+
+        logger.exception(
+            "Database index initialization failed."
+        )
+
+    # --------------------------------------------------------
+    # Extract handlers
+    # --------------------------------------------------------
+
+    try:
+
+        # IMPORTANT:
+        # Old code used:
+        #     extract_handlers.register()
+        #
+        # That caused:
+        #     missing 1 required positional argument: application
+        #
+        # Registration is now handled safely.
+
+        if hasattr(
+            extract_handlers,
+            "register",
+        ):
+
+            try:
+
+                extract_handlers.register(
+                    application
+                )
+
+                logger.info(
+                    "Extract handlers registered."
+                )
+
+            except TypeError:
+
+                logger.exception(
+                    "ExtractHandlers.register() signature mismatch."
+                )
+
+        else:
+
+            logger.info(
+                "ExtractHandlers uses main callback router."
+            )
 
     except Exception:
 
@@ -582,17 +863,36 @@ async def post_init(
         )
 
     # --------------------------------------------------------
-    # Database
+    # Admin handlers
     # --------------------------------------------------------
 
     try:
 
-        db.ensure_indexes()
+        if hasattr(
+            admin_handlers,
+            "register",
+        ):
+
+            try:
+
+                admin_handlers.register(
+                    application
+                )
+
+                logger.info(
+                    "Admin handlers registered."
+                )
+
+            except TypeError:
+
+                logger.exception(
+                    "AdminHandlers.register() signature mismatch."
+                )
 
     except Exception:
 
         logger.exception(
-            "Database index initialization failed."
+            "Admin handlers registration failed."
         )
 
     logger.info(
@@ -648,12 +948,8 @@ def build_application():
     application = (
         Application.builder()
         .token(BOT_TOKEN)
-        .post_init(
-            post_init
-        )
-        .post_shutdown(
-            post_shutdown
-        )
+        .post_init(post_init)
+        .post_shutdown(post_shutdown)
         .build()
     )
 
@@ -697,7 +993,7 @@ def build_application():
     )
 
     # ========================================================
-    # CALLBACKS
+    # CALLBACK ROUTER
     # ========================================================
 
     application.add_handler(
