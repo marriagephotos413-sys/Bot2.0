@@ -10,6 +10,8 @@ from telegram import (
 )
 from telegram.ext import (
     ContextTypes,
+    CommandHandler,
+    CallbackQueryHandler,
 )
 
 from .config import CONFIG
@@ -51,7 +53,35 @@ class AdminHandlers:
     # ============================================================
     # ADMIN CHECK
     # ============================================================
+    # ============================================================
+    # REGISTER ADMIN HANDLERS
+    # ============================================================
 
+    def register(self, application):
+        """
+        Register Admin command and callbacks.
+
+        Usage:
+            admin_handlers.register(application)
+        """
+
+        application.add_handler(
+            CommandHandler(
+                "admin",
+                self.admin_command,
+            )
+        )
+
+        application.add_handler(
+            CallbackQueryHandler(
+                self.handle_callback,
+                pattern=r"^admin:"
+            )
+        )
+
+        logger.info(
+            "AdminHandlers registered successfully."
+        )
     async def is_admin(
         self,
         update: Update,
