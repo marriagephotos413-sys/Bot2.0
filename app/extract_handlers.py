@@ -7,7 +7,10 @@ from telegram import (
     InlineKeyboardMarkup,
     Update,
 )
-from telegram.ext import ContextTypes
+from telegram.ext import (
+    ContextTypes,
+    CallbackQueryHandler,
+)
 
 from .config import CONFIG
 from .database import db
@@ -56,7 +59,185 @@ class ExtractHandlers:
     # ============================================================
     # TEST DETAILS
     # ============================================================
+    # ============================================================
+    # REGISTER HANDLERS
+    # ============================================================
 
+    def register(self, application):
+        """
+        Register all extraction related Telegram callbacks.
+
+        Usage:
+            extract_handlers.register(application)
+        """
+
+        # Test details
+        application.add_handler(
+            CallbackQueryHandler(
+                self._test_callback,
+                pattern=r"^test:"
+            )
+        )
+
+        # Extract button
+        application.add_handler(
+            CallbackQueryHandler(
+                self._extract_callback,
+                pattern=r"^extract:"
+            )
+        )
+
+        # Extract confirmation
+        application.add_handler(
+            CallbackQueryHandler(
+                self._extract_confirm_callback,
+                pattern=r"^extract_confirm:"
+            )
+        )
+
+        # Retry extraction
+        application.add_handler(
+            CallbackQueryHandler(
+                self._retry_callback,
+                pattern=r"^retry_extract:"
+            )
+        )
+
+        logger.info(
+            "ExtractHandlers registered successfully."
+        )
+
+
+    async def _test_callback(
+        self,
+        update: Update,
+        context: ContextTypes.DEFAULT_TYPE,
+    ):
+        query = update.callback_query
+
+        if not query:
+            return
+
+        data = query.data or ""
+
+        await telegram_utils.answer_callback(query)
+
+        test_id = data.split(
+            ":",
+            1
+        )[1].strip()
+
+        if not test_id:
+            return await self._send_error(
+                update,
+                context,
+                "❌ Invalid Test ID."
+            )
+
+        return await self.show_test(
+            update,
+            context,
+            test_id,
+        )
+
+
+    async def _extract_callback(
+        self,
+        update: Update,
+        context: ContextTypes.DEFAULT_TYPE,
+    ):
+        query = update.callback_query
+
+        if not query:
+            return
+
+        data = query.data or ""
+
+        await telegram_utils.answer_callback(query)
+
+        test_id = data.split(
+            ":",
+            1
+        )[1].strip()
+
+        if not test_id:
+            return await self._send_error(
+                update,
+                context,
+                "❌ Invalid Test ID."
+            )
+
+        return await self.confirm_extract(
+            update,
+            context,
+            test_id,
+        )
+
+
+    async def _extract_confirm_callback(
+        self,
+        update: Update,
+        context: ContextTypes.DEFAULT_TYPE,
+    ):
+        query = update.callback_query
+
+        if not query:
+            return
+
+        data = query.data or ""
+
+        await telegram_utils.answer_callback(query)
+
+        test_id = data.split(
+            ":",
+            1
+        )[1].strip()
+
+        if not test_id:
+            return await self._send_error(
+                update,
+                context,
+                "❌ Invalid Test ID."
+            )
+
+        return await self.create_extract_job(
+            update,
+            context,
+            test_id,
+        )
+
+
+    async def _retry_callback(
+        self,
+        update: Update,
+        context: ContextTypes.DEFAULT_TYPE,
+    ):
+        query = update.callback_query
+
+        if not query:
+            return
+
+        data = query.data or ""
+
+        await telegram_utils.answer_callback(query)
+
+        job_id = data.split(
+            ":",
+            1
+        )[1].strip()
+
+        if not job_id:
+            return await self._send_error(
+                update,
+                context,
+                "❌ Invalid Job ID."
+            )
+
+        return await self.retry_extract_job(
+            update,
+            context,
+            job_id,
+    )
     async def show_test(
         self,
         update: Update,
