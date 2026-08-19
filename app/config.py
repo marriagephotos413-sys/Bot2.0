@@ -55,17 +55,10 @@ class Config:
     """
     Central application configuration.
 
-    Secrets हमेशा environment variables से लिए जाते हैं।
+    All sensitive values are read from environment variables.
 
-    IMPORTANT:
-    -------------------------------
-    Old code:
-        CONFIG.MONGO_URL
-
-    New/other code:
-        CONFIG.mongo_url
-
-    दोनों supported हैं।
+    Both uppercase and lowercase configuration attributes
+    are supported for compatibility with existing modules.
     """
 
     # ========================================================
@@ -123,12 +116,10 @@ class Config:
     # GITHUB
     # ========================================================
     #
-    # GitHub अब startup के लिए REQUIRED नहीं है.
+    # GitHub values are OPTIONAL.
     #
-    # TCS में JSON embedded/self-contained रखा जा सकता है.
+    # If GitHub upload is enabled, these values are used.
     #
-    # अगर future में GitHub integration enable करना हो
-    # तो values यहाँ से मिल जाएंगी.
     # ========================================================
 
     GITHUB_TOKEN = os.getenv(
@@ -156,12 +147,18 @@ class Config:
         "tcs.html",
     ).strip() or "tcs.html"
 
+    GITHUB_TEMPLATE_PATH = os.getenv(
+        "GITHUB_TEMPLATE_PATH",
+        "tcs.html",
+    ).strip() or "tcs.html"
+
+    GITHUB_TESTS_DIRECTORY = os.getenv(
+        "GITHUB_TESTS_DIRECTORY",
+        "published",
+    ).strip().strip("/") or "published"
+
     # ========================================================
     # CHANNELS
-    # ========================================================
-    #
-    # इन्हें ENV से भी दिया जा सकता है,
-    # लेकिन bot/MongoDB commands से भी manage किया जा सकता है.
     # ========================================================
 
     DATABASE_CHANNEL_ID = _get_int(
@@ -388,12 +385,6 @@ class Config:
     # ========================================================
     # BACKWARD COMPATIBILITY
     # ========================================================
-    #
-    # database.py CONFIG.mongo_url use करता है.
-    # बाकी पुराना code CONFIG.MONGO_URL use कर सकता है.
-    #
-    # दोनों same ENV value से आएंगे.
-    # ========================================================
 
     @property
     def mongo_url(self):
@@ -436,12 +427,112 @@ class Config:
         return self.GITHUB_BRANCH
 
     @property
-    def port(self):
-        return self.PORT
+    def github_test_file(self):
+        return self.GITHUB_TEST_FILE
+
+    @property
+    def github_template_path(self):
+        return self.GITHUB_TEMPLATE_PATH
+
+    @property
+    def github_tests_directory(self):
+        return self.GITHUB_TESTS_DIRECTORY
+
+    @property
+    def database_channel_id(self):
+        return self.DATABASE_CHANNEL_ID
+
+    @property
+    def payment_verify_channel_id(self):
+        return self.PAYMENT_VERIFY_CHANNEL_ID
+
+    @property
+    def user_activity_channel_id(self):
+        return self.USER_ACTIVITY_CHANNEL_ID
+
+    @property
+    def paid_user_channel_id(self):
+        return self.PAID_USER_CHANNEL_ID
+
+    @property
+    def force_join_channels(self):
+        return self.FORCE_JOIN_CHANNELS
 
     @property
     def host(self):
         return self.HOST
+
+    @property
+    def port(self):
+        return self.PORT
+
+    @property
+    def worker_count(self):
+        return self.WORKER_COUNT
+
+    @property
+    def max_queue_size(self):
+        return self.MAX_QUEUE_SIZE
+
+    @property
+    def max_user_queue(self):
+        return self.MAX_USER_QUEUE
+
+    @property
+    def paid_first_priority(self):
+        return self.PAID_FIRST_PRIORITY
+
+    @property
+    def load_protection_enabled(self):
+        return self.LOAD_PROTECTION_ENABLED
+
+    @property
+    def free_trial_days(self):
+        return self.FREE_TRIAL_DAYS
+
+    @property
+    def test_price(self):
+        return self.TEST_PRICE
+
+    @property
+    def environment(self):
+        return self.ENVIRONMENT
+
+    @property
+    def debug(self):
+        return self.DEBUG
+
+    @property
+    def test_extraction_enabled(self):
+        return self.TEST_EXTRACTION_ENABLED
+
+    @property
+    def test_upload_enabled(self):
+        return self.TEST_UPLOAD_ENABLED
+
+    @property
+    def auto_github_update(self):
+        return self.AUTO_GITHUB_UPDATE
+
+    @property
+    def google_sheet_url(self):
+        return self.GOOGLE_SHEET_URL
+
+    @property
+    def google_script_url(self):
+        return self.GOOGLE_SCRIPT_URL
+
+    @property
+    def user_rate_limit(self):
+        return self.USER_RATE_LIMIT
+
+    @property
+    def user_rate_window(self):
+        return self.USER_RATE_WINDOW
+
+    @property
+    def log_level(self):
+        return self.LOG_LEVEL
 
 
 # ============================================================
@@ -457,9 +548,9 @@ CONFIG = Config()
 
 def validate_config() -> None:
     """
-    Required production configuration check.
+    Validate only truly required configuration.
 
-    GitHub intentionally required नहीं है.
+    GitHub is intentionally NOT required here.
     """
 
     required = {
@@ -477,7 +568,6 @@ def validate_config() -> None:
     ]
 
     if missing:
-
         raise RuntimeError(
             "Missing required environment variables: "
             + ", ".join(missing)
@@ -489,41 +579,45 @@ def validate_config() -> None:
 # ============================================================
 
 def config_summary() -> dict:
-    """
-    Safe configuration summary.
-
-    Secrets कभी return नहीं करता.
-    """
 
     return {
         "environment": CONFIG.ENVIRONMENT,
+
         "mongo_configured": bool(
             CONFIG.MONGO_URL
         ),
+
         "telegram_configured": bool(
             CONFIG.BOT_TOKEN
         ),
+
         "api_configured": bool(
             CONFIG.API_ID
             and CONFIG.API_HASH
         ),
+
         "admin_count": len(
             CONFIG.ADMIN_IDS
         ),
+
         "github_configured": bool(
             CONFIG.GITHUB_TOKEN
             and CONFIG.GITHUB_OWNER
             and CONFIG.GITHUB_REPO
         ),
+
         "google_sheet_configured": bool(
             CONFIG.GOOGLE_SHEET_URL
             or CONFIG.GOOGLE_SCRIPT_URL
         ),
+
         "test_extraction_enabled": (
             CONFIG.TEST_EXTRACTION_ENABLED
         ),
+
         "test_upload_enabled": (
             CONFIG.TEST_UPLOAD_ENABLED
         ),
+
         "port": CONFIG.PORT,
     }
