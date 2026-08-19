@@ -16,10 +16,7 @@ class MongoDatabase:
     """
     MongoDB manager.
 
-    IMPORTANT:
-    MongoDB में Test का पूरा questions JSON save नहीं किया जाएगा।
-
-    MongoDB में केवल:
+    MongoDB में:
     - Test metadata
     - GitHub URL/path
     - Database Channel message ID
@@ -28,6 +25,7 @@ class MongoDatabase:
     - Queue/job data
     - Settings
     - Reports/statistics
+    - Extract history
     save होंगे।
 
     Actual TCS HTML + embedded JSON:
@@ -36,19 +34,69 @@ class MongoDatabase:
         Database Channel backup
     """
 
+    # ========================================================
+    # INITIALIZATION
+    # ========================================================
+
     def __init__(self):
-        # MongoDB configuration is loaded from Config.
-        # Both values are explicit dataclass fields in config.py.
-        mongo_url = (CONFIG.mongo_url or "").strip()
-        mongo_database = (CONFIG.mongo_database or "").strip()
+
+        # ----------------------------------------------------
+        # MongoDB URL
+        # ----------------------------------------------------
+
+        mongo_url = getattr(
+            CONFIG,
+            "mongo_url",
+            None,
+        )
 
         if not mongo_url:
+
             raise RuntimeError(
-                "MONGO_URL is missing. Add MONGO_URL in Render Environment Variables."
+                "MONGO_URL is missing. "
+                "Add MONGO_URL in Render Environment Variables."
             )
 
+        mongo_url = str(
+            mongo_url
+        ).strip()
+
+        if not mongo_url:
+
+            raise RuntimeError(
+                "MONGO_URL is empty. "
+                "Add a valid MongoDB connection string."
+            )
+
+        # ----------------------------------------------------
+        # Database name
+        # ----------------------------------------------------
+
+        mongo_database = getattr(
+            CONFIG,
+            "mongo_database",
+            None,
+        )
+
         if not mongo_database:
-            mongo_database = "telegram_test_bot"
+
+            mongo_database = (
+                "telegram_test_bot"
+            )
+
+        mongo_database = str(
+            mongo_database
+        ).strip()
+
+        if not mongo_database:
+
+            mongo_database = (
+                "telegram_test_bot"
+            )
+
+        # ----------------------------------------------------
+        # Mongo client
+        # ----------------------------------------------------
 
         self.client: MongoClient = MongoClient(
             mongo_url,
@@ -59,71 +107,130 @@ class MongoDatabase:
             appname="telegram-test-bot",
         )
 
-        self.db: Database = self.client[mongo_database]
+        self.db: Database = self.client[
+            mongo_database
+        ]
 
-        # ========================================================
+        # ====================================================
         # COLLECTIONS
-        # ========================================================
+        # ====================================================
 
-        self.users: Collection = self.db["users"]
+        self.users: Collection = self.db[
+            "users"
+        ]
 
-        self.tests: Collection = self.db["tests"]
+        self.tests: Collection = self.db[
+            "tests"
+        ]
 
-        self.jobs: Collection = self.db["jobs"]
+        self.jobs: Collection = self.db[
+            "jobs"
+        ]
 
-        self.payments: Collection = self.db["payments"]
+        self.payments: Collection = self.db[
+            "payments"
+        ]
 
-        self.settings: Collection = self.db["settings"]
+        self.settings: Collection = self.db[
+            "settings"
+        ]
 
-        self.extracts: Collection = self.db["extracts"]
+        self.extracts: Collection = self.db[
+            "extracts"
+        ]
 
-        self.events: Collection = self.db["events"]
+        self.events: Collection = self.db[
+            "events"
+        ]
 
-        self.broadcasts: Collection = self.db["broadcasts"]
+        self.broadcasts: Collection = self.db[
+            "broadcasts"
+        ]
 
-        self.backups: Collection = self.db["backups"]
+        self.backups: Collection = self.db[
+            "backups"
+        ]
 
-        # ========================================================
-        # INDEXES
-        # ========================================================
+        # ====================================================
+        # CREATE INDEXES
+        # ====================================================
 
-        self._create_indexes()
+        try:
 
-    # ============================================================
+            self._create_indexes()
+
+            logger.info(
+                "MongoDB indexes initialized."
+            )
+
+        except Exception:
+
+            logger.exception(
+                "MongoDB index creation failed."
+            )
+
+    # ========================================================
     # GENERAL
-    # ============================================================
+    # ========================================================
 
     @staticmethod
     def utc_now() -> datetime:
-        return datetime.now(timezone.utc)
+
+        return datetime.now(
+            timezone.utc
+        )
+
+    # ========================================================
+    # PING
+    # ========================================================
 
     def ping(self) -> bool:
-        """
-        MongoDB connection check.
-        """
+
         try:
-            self.client.admin.command("ping")
+
+            self.client.admin.command(
+                "ping"
+            )
+
             return True
 
         except Exception:
-            logger.exception("MongoDB ping failed")
+
+            logger.exception(
+                "MongoDB ping failed."
+            )
+
             return False
 
-    def close(self):
-        try:
-            self.client.close()
-        except Exception:
-            pass
+    # ========================================================
+    # CLOSE
+    # ========================================================
 
-    # ============================================================
+    def close(self):
+
+        try:
+
+            self.client.close()
+
+            logger.info(
+                "MongoDB connection closed."
+            )
+
+        except Exception:
+
+            logger.exception(
+                "MongoDB close failed."
+            )
+
+    # ========================================================
     # INDEXES
-    # ============================================================
+    # ========================================================
 
     def _create_indexes(self):
 
-        # -------------------------
-        # Users
-        # -------------------------
+        # ====================================================
+        # USERS
+        # ====================================================
 
         self.users.create_index(
             [("user_id", ASCENDING)],
@@ -151,9 +258,9 @@ class MongoDatabase:
             name="users_last_seen",
         )
 
-        # -------------------------
-        # Tests
-        # -------------------------
+        # ====================================================
+        # TESTS
+        # ====================================================
 
         self.tests.create_index(
             [("test_id", ASCENDING)],
@@ -181,9 +288,9 @@ class MongoDatabase:
             name="tests_extract_count",
         )
 
-        # -------------------------
-        # Jobs
-        # -------------------------
+        # ====================================================
+        # JOBS
+        # ====================================================
 
         self.jobs.create_index(
             [
@@ -195,13 +302,22 @@ class MongoDatabase:
         )
 
         self.jobs.create_index(
-            [("user_id", ASCENDING), ("created_at", DESCENDING)],
+            [
+                ("user_id", ASCENDING),
+                ("created_at", DESCENDING),
+            ],
             name="user_jobs",
         )
 
-        # -------------------------
-        # Payments
-        # -------------------------
+        self.jobs.create_index(
+            [("job_id", ASCENDING)],
+            unique=True,
+            name="unique_job_id",
+        )
+
+        # ====================================================
+        # PAYMENTS
+        # ====================================================
 
         self.payments.create_index(
             [("payment_id", ASCENDING)],
@@ -210,41 +326,56 @@ class MongoDatabase:
         )
 
         self.payments.create_index(
-            [("user_id", ASCENDING), ("created_at", DESCENDING)],
+            [
+                ("user_id", ASCENDING),
+                ("created_at", DESCENDING),
+            ],
             name="user_payments",
         )
 
         self.payments.create_index(
-            [("status", ASCENDING), ("created_at", ASCENDING)],
+            [
+                ("status", ASCENDING),
+                ("created_at", ASCENDING),
+            ],
             name="pending_payments",
         )
 
-        # -------------------------
-        # Extract history
-        # -------------------------
+        # ====================================================
+        # EXTRACT HISTORY
+        # ====================================================
 
         self.extracts.create_index(
-            [("user_id", ASCENDING), ("created_at", DESCENDING)],
+            [
+                ("user_id", ASCENDING),
+                ("created_at", DESCENDING),
+            ],
             name="user_extract_history",
         )
 
         self.extracts.create_index(
-            [("test_id", ASCENDING), ("created_at", DESCENDING)],
+            [
+                ("test_id", ASCENDING),
+                ("created_at", DESCENDING),
+            ],
             name="test_extract_history",
         )
 
-        # -------------------------
-        # Events
-        # -------------------------
+        # ====================================================
+        # EVENTS
+        # ====================================================
 
         self.events.create_index(
-            [("event_type", ASCENDING), ("created_at", DESCENDING)],
+            [
+                ("event_type", ASCENDING),
+                ("created_at", DESCENDING),
+            ],
             name="event_type_time",
         )
 
-        # -------------------------
-        # Settings
-        # -------------------------
+        # ====================================================
+        # SETTINGS
+        # ====================================================
 
         self.settings.create_index(
             [("key", ASCENDING)],
@@ -252,9 +383,9 @@ class MongoDatabase:
             name="unique_setting_key",
         )
 
-        # -------------------------
-        # Backup
-        # -------------------------
+        # ====================================================
+        # BACKUPS
+        # ====================================================
 
         self.backups.create_index(
             [("test_id", ASCENDING)],
@@ -262,9 +393,9 @@ class MongoDatabase:
             name="unique_test_backup",
         )
 
-        # -------------------------
-        # Broadcast
-        # -------------------------
+        # ====================================================
+        # BROADCASTS
+        # ====================================================
 
         self.broadcasts.create_index(
             [("broadcast_id", ASCENDING)],
@@ -272,9 +403,45 @@ class MongoDatabase:
             name="unique_broadcast_id",
         )
 
-    # ============================================================
+        logger.info(
+            "All MongoDB indexes created/verified."
+        )
+
+    # ========================================================
+    # IMPORTANT COMPATIBILITY METHOD
+    # ========================================================
+
+    def ensure_indexes(self) -> bool:
+        """
+        Public method used by main.py.
+
+        This fixes:
+            AttributeError:
+            'MongoDatabase' object has no attribute
+            'ensure_indexes'
+        """
+
+        try:
+
+            self._create_indexes()
+
+            logger.info(
+                "MongoDB indexes ensured successfully."
+            )
+
+            return True
+
+        except Exception:
+
+            logger.exception(
+                "MongoDB index initialization failed."
+            )
+
+            return False
+
+    # ========================================================
     # USERS
-    # ============================================================
+    # ========================================================
 
     def create_or_update_user(
         self,
@@ -285,9 +452,7 @@ class MongoDatabase:
         is_bot: bool = False,
     ) -> Dict[str, Any]:
 
-        current = self.users.find_one(
-            {"user_id": user_id}
-        )
+        now = self.utc_now()
 
         update = {
             "$set": {
@@ -295,22 +460,19 @@ class MongoDatabase:
                 "username": username,
                 "language": language,
                 "is_bot": is_bot,
-                "last_seen": self.utc_now(),
+                "last_seen": now,
             },
             "$setOnInsert": {
                 "user_id": user_id,
-                "created_at": self.utc_now(),
+                "created_at": now,
 
-                # User state
                 "banned": False,
 
-                # Premium
                 "paid": False,
                 "paid_plan": None,
                 "paid_at": None,
                 "paid_expiry": None,
 
-                # Trial
                 "trial_used": False,
                 "trial_locked": False,
                 "trial_started_at": None,
@@ -318,12 +480,10 @@ class MongoDatabase:
                 "trial_extract_limit": 0,
                 "trial_extract_used": 0,
 
-                # Statistics
                 "extract_count": 0,
                 "successful_extracts": 0,
                 "failed_extracts": 0,
 
-                # Activity
                 "last_extract_at": None,
                 "last_payment_at": None,
             },
@@ -335,9 +495,15 @@ class MongoDatabase:
             upsert=True,
         )
 
-        return self.users.find_one(
+        user = self.users.find_one(
             {"user_id": user_id}
         )
+
+        return user or {}
+
+    # ========================================================
+    # GET USER
+    # ========================================================
 
     def get_user(
         self,
@@ -347,6 +513,10 @@ class MongoDatabase:
         return self.users.find_one(
             {"user_id": user_id}
         )
+
+    # ========================================================
+    # USER EXISTS
+    # ========================================================
 
     def user_exists(
         self,
@@ -360,6 +530,10 @@ class MongoDatabase:
             )
             > 0
         )
+
+    # ========================================================
+    # BAN USER
+    # ========================================================
 
     def ban_user(
         self,
@@ -380,6 +554,10 @@ class MongoDatabase:
             },
         )
 
+    # ========================================================
+    # UNBAN USER
+    # ========================================================
+
     def unban_user(
         self,
         user_id: int,
@@ -397,9 +575,9 @@ class MongoDatabase:
             },
         )
 
-    # ============================================================
-    # PAID USERS
-    # ============================================================
+    # ========================================================
+    # PAID USER
+    # ========================================================
 
     def activate_paid_user(
         self,
@@ -423,6 +601,10 @@ class MongoDatabase:
             },
         )
 
+    # ========================================================
+    # DEACTIVATE PAID USER
+    # ========================================================
+
     def deactivate_paid_user(
         self,
         user_id: int,
@@ -437,28 +619,56 @@ class MongoDatabase:
             },
         )
 
+    # ========================================================
+    # IS PAID USER
+    # ========================================================
+
     def is_paid_user(
         self,
         user_id: int,
     ) -> bool:
 
-        user = self.get_user(user_id)
+        user = self.get_user(
+            user_id
+        )
 
         if not user:
             return False
 
-        if not user.get("paid", False):
+        if not user.get(
+            "paid",
+            False,
+        ):
             return False
 
-        expiry = user.get("paid_expiry")
+        expiry = user.get(
+            "paid_expiry"
+        )
 
-        if expiry and expiry < self.utc_now():
+        if expiry:
 
-            self.deactivate_paid_user(user_id)
+            try:
 
-            return False
+                if expiry < self.utc_now():
+
+                    self.deactivate_paid_user(
+                        user_id
+                    )
+
+                    return False
+
+            except TypeError:
+
+                logger.warning(
+                    "Invalid paid_expiry for user %s",
+                    user_id,
+                )
 
         return True
+
+    # ========================================================
+    # GET PAID USERS
+    # ========================================================
 
     def get_paid_users(
         self,
@@ -470,14 +680,17 @@ class MongoDatabase:
             self.users.find(
                 {"paid": True}
             )
-            .sort("paid_at", DESCENDING)
+            .sort(
+                "paid_at",
+                DESCENDING,
+            )
             .skip(skip)
             .limit(limit)
         )
 
-    # ============================================================
-    # FREE TRIAL
-    # ============================================================
+    # ========================================================
+    # TRIAL
+    # ========================================================
 
     def mark_trial_started(
         self,
@@ -500,6 +713,10 @@ class MongoDatabase:
             },
         )
 
+    # ========================================================
+    # LOCK TRIAL
+    # ========================================================
+
     def lock_trial(
         self,
         user_id: int,
@@ -514,6 +731,10 @@ class MongoDatabase:
             },
         )
 
+    # ========================================================
+    # INCREMENT TRIAL EXTRACT
+    # ========================================================
+
     def increment_trial_extract(
         self,
         user_id: int,
@@ -524,13 +745,17 @@ class MongoDatabase:
             {
                 "$inc": {
                     "trial_extract_used": 1,
-                }
+                    "extract_count": 1,
+                },
+                "$set": {
+                    "last_extract_at": self.utc_now(),
+                },
             },
         )
 
-    # ============================================================
+    # ========================================================
     # TESTS
-    # ============================================================
+    # ========================================================
 
     def create_or_update_test(
         self,
@@ -538,10 +763,12 @@ class MongoDatabase:
         metadata: Dict[str, Any],
     ):
 
+        now = self.utc_now()
+
         data = {
             "test_id": test_id,
             **metadata,
-            "updated_at": self.utc_now(),
+            "updated_at": now,
         }
 
         return self.tests.update_one(
@@ -549,7 +776,7 @@ class MongoDatabase:
             {
                 "$set": data,
                 "$setOnInsert": {
-                    "created_at": self.utc_now(),
+                    "created_at": now,
                     "extract_count": 0,
                     "successful_extracts": 0,
                     "failed_extracts": 0,
@@ -557,6 +784,10 @@ class MongoDatabase:
             },
             upsert=True,
         )
+
+    # ========================================================
+    # GET TEST
+    # ========================================================
 
     def get_test(
         self,
@@ -567,6 +798,10 @@ class MongoDatabase:
             {"test_id": test_id}
         )
 
+    # ========================================================
+    # CATEGORIES
+    # ========================================================
+
     def get_categories(self) -> List[str]:
 
         values = self.tests.distinct(
@@ -574,8 +809,16 @@ class MongoDatabase:
         )
 
         return sorted(
-            [x for x in values if x]
+            [
+                x
+                for x in values
+                if x
+            ]
         )
+
+    # ========================================================
+    # EXAMS
+    # ========================================================
 
     def get_exams(
         self,
@@ -584,12 +827,22 @@ class MongoDatabase:
 
         values = self.tests.distinct(
             "exam",
-            {"category": category},
+            {
+                "category": category
+            },
         )
 
         return sorted(
-            [x for x in values if x]
+            [
+                x
+                for x in values
+                if x
+            ]
         )
+
+    # ========================================================
+    # TEST TYPES
+    # ========================================================
 
     def get_test_types(
         self,
@@ -606,8 +859,16 @@ class MongoDatabase:
         )
 
         return sorted(
-            [x for x in values if x]
+            [
+                x
+                for x in values
+                if x
+            ]
         )
+
+    # ========================================================
+    # YEARS
+    # ========================================================
 
     def get_years(
         self,
@@ -626,9 +887,17 @@ class MongoDatabase:
         )
 
         return sorted(
-            [str(x) for x in values if x],
+            [
+                str(x)
+                for x in values
+                if x
+            ],
             reverse=True,
         )
+
+    # ========================================================
+    # GET TESTS
+    # ========================================================
 
     def get_tests(
         self,
@@ -649,10 +918,17 @@ class MongoDatabase:
                     "year": year,
                 }
             )
-            .sort("created_at", DESCENDING)
+            .sort(
+                "created_at",
+                DESCENDING,
+            )
             .skip(skip)
             .limit(limit)
         )
+
+    # ========================================================
+    # SEARCH TESTS
+    # ========================================================
 
     def search_tests(
         self,
@@ -669,21 +945,34 @@ class MongoDatabase:
             self.tests.find(
                 {
                     "$or": [
-                        {"title": regex},
-                        {"exam": regex},
-                        {"series": regex},
-                        {"section": regex},
-                        {"subsection": regex},
+                        {
+                            "title": regex
+                        },
+                        {
+                            "exam": regex
+                        },
+                        {
+                            "series": regex
+                        },
+                        {
+                            "section": regex
+                        },
+                        {
+                            "subsection": regex
+                        },
                     ]
                 }
             )
-            .sort("created_at", DESCENDING)
+            .sort(
+                "created_at",
+                DESCENDING,
+            )
             .limit(limit)
         )
 
-    # ============================================================
+    # ========================================================
     # TEST EXTRACT STATISTICS
-    # ============================================================
+    # ========================================================
 
     def increment_test_extract(
         self,
@@ -701,14 +990,25 @@ class MongoDatabase:
         }
 
         if success:
-            update["$inc"]["successful_extracts"] = 1
+
+            update["$inc"][
+                "successful_extracts"
+            ] = 1
+
         else:
-            update["$inc"]["failed_extracts"] = 1
+
+            update["$inc"][
+                "failed_extracts"
+            ] = 1
 
         return self.tests.update_one(
             {"test_id": test_id},
             update,
         )
+
+    # ========================================================
+    # EXTRACT RECORD
+    # ========================================================
 
     def create_extract_record(
         self,
@@ -718,15 +1018,35 @@ class MongoDatabase:
         job_id: Optional[str] = None,
     ):
 
-        return self.extracts.insert_one(
+        now = self.utc_now()
+
+        result = self.extracts.insert_one(
             {
                 "user_id": user_id,
                 "test_id": test_id,
                 "status": status,
                 "job_id": job_id,
-                "created_at": self.utc_now(),
+                "created_at": now,
             }
         )
+
+        self.users.update_one(
+            {"user_id": user_id},
+            {
+                "$inc": {
+                    "extract_count": 1,
+                },
+                "$set": {
+                    "last_extract_at": now,
+                },
+            },
+        )
+
+        return result
+
+    # ========================================================
+    # USER EXTRACT HISTORY
+    # ========================================================
 
     def get_user_extracts(
         self,
@@ -736,15 +1056,20 @@ class MongoDatabase:
 
         return list(
             self.extracts.find(
-                {"user_id": user_id}
+                {
+                    "user_id": user_id
+                }
             )
-            .sort("created_at", DESCENDING)
+            .sort(
+                "created_at",
+                DESCENDING,
+            )
             .limit(limit)
         )
 
-    # ============================================================
-    # QUEUE / JOBS
-    # ============================================================
+    # ========================================================
+    # JOBS
+    # ========================================================
 
     def create_job(
         self,
@@ -760,23 +1085,20 @@ class MongoDatabase:
                 "job_id": job_id,
                 "user_id": user_id,
                 "job_type": job_type,
-
-                # Paid = high priority
                 "priority": priority,
-
                 "status": "queued",
-
                 "payload": payload or {},
-
                 "retry_count": 0,
-
                 "created_at": self.utc_now(),
                 "started_at": None,
                 "finished_at": None,
-
                 "error": None,
             }
         )
+
+    # ========================================================
+    # GET JOB
+    # ========================================================
 
     def get_job(
         self,
@@ -786,6 +1108,10 @@ class MongoDatabase:
         return self.jobs.find_one(
             {"job_id": job_id}
         )
+
+    # ========================================================
+    # UPDATE JOB
+    # ========================================================
 
     def update_job(
         self,
@@ -802,12 +1128,19 @@ class MongoDatabase:
         }
 
         if status:
-            update["$set"]["status"] = status
+
+            update["$set"][
+                "status"
+            ] = status
 
         return self.jobs.update_one(
             {"job_id": job_id},
             update,
         )
+
+    # ========================================================
+    # RETRY JOB
+    # ========================================================
 
     def increment_job_retry(
         self,
@@ -828,9 +1161,9 @@ class MongoDatabase:
             },
         )
 
-    # ============================================================
-    # PAYMENT
-    # ============================================================
+    # ========================================================
+    # PAYMENTS
+    # ========================================================
 
     def create_payment(
         self,
@@ -847,18 +1180,20 @@ class MongoDatabase:
                 "user_id": user_id,
                 "amount": amount,
                 "plan": plan,
-
                 "status": "pending",
-
-                "screenshot_message_id": screenshot_message_id,
-
+                "screenshot_message_id": (
+                    screenshot_message_id
+                ),
                 "created_at": self.utc_now(),
-
                 "reviewed_at": None,
                 "reviewed_by": None,
                 "reject_reason": None,
             }
         )
+
+    # ========================================================
+    # GET PAYMENT
+    # ========================================================
 
     def get_payment(
         self,
@@ -868,6 +1203,10 @@ class MongoDatabase:
         return self.payments.find_one(
             {"payment_id": payment_id}
         )
+
+    # ========================================================
+    # UPDATE PAYMENT
+    # ========================================================
 
     def update_payment(
         self,
@@ -889,9 +1228,9 @@ class MongoDatabase:
             },
         )
 
-    # ============================================================
+    # ========================================================
     # SETTINGS
-    # ============================================================
+    # ========================================================
 
     def set_setting(
         self,
@@ -912,6 +1251,10 @@ class MongoDatabase:
             upsert=True,
         )
 
+    # ========================================================
+    # GET SETTING
+    # ========================================================
+
     def get_setting(
         self,
         key: str,
@@ -923,12 +1266,17 @@ class MongoDatabase:
         )
 
         if not item:
+
             return default
 
         return item.get(
             "value",
             default,
         )
+
+    # ========================================================
+    # DELETE SETTING
+    # ========================================================
 
     def delete_setting(
         self,
@@ -939,9 +1287,9 @@ class MongoDatabase:
             {"key": key}
         )
 
-    # ============================================================
+    # ========================================================
     # CHANNEL SETTINGS
-    # ============================================================
+    # ========================================================
 
     def set_channel(
         self,
@@ -963,6 +1311,10 @@ class MongoDatabase:
             added_by,
         )
 
+    # ========================================================
+    # GET CHANNEL
+    # ========================================================
+
     def get_channel(
         self,
         channel_type: str,
@@ -971,6 +1323,10 @@ class MongoDatabase:
         return self.get_setting(
             f"channel:{channel_type}"
         )
+
+    # ========================================================
+    # REMOVE CHANNEL
+    # ========================================================
 
     def remove_channel(
         self,
@@ -981,9 +1337,9 @@ class MongoDatabase:
             f"channel:{channel_type}"
         )
 
-    # ============================================================
+    # ========================================================
     # FORCE JOIN
-    # ============================================================
+    # ========================================================
 
     def set_force_join_channels(
         self,
@@ -997,16 +1353,22 @@ class MongoDatabase:
             updated_by,
         )
 
-    def get_force_join_channels(self) -> List[Dict[str, Any]]:
+    # ========================================================
+    # GET FORCE JOIN CHANNELS
+    # ========================================================
+
+    def get_force_join_channels(
+        self,
+    ) -> List[Dict[str, Any]]:
 
         return self.get_setting(
             "force_join_channels",
             [],
         )
 
-    # ============================================================
+    # ========================================================
     # BACKUP
-    # ============================================================
+    # ========================================================
 
     def save_backup_record(
         self,
@@ -1035,6 +1397,10 @@ class MongoDatabase:
             upsert=True,
         )
 
+    # ========================================================
+    # GET BACKUP
+    # ========================================================
+
     def get_backup(
         self,
         test_id: str,
@@ -1044,9 +1410,9 @@ class MongoDatabase:
             {"test_id": test_id}
         )
 
-    # ============================================================
+    # ========================================================
     # EVENTS / AUDIT LOG
-    # ============================================================
+    # ========================================================
 
     def log_event(
         self,
@@ -1068,9 +1434,9 @@ class MongoDatabase:
             }
         )
 
-    # ============================================================
+    # ========================================================
     # BROADCAST
-    # ============================================================
+    # ========================================================
 
     def create_broadcast(
         self,
@@ -1094,43 +1460,65 @@ class MongoDatabase:
             }
         )
 
-    # ============================================================
+    # ========================================================
     # STATS
-    # ============================================================
+    # ========================================================
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(
+        self,
+    ) -> Dict[str, Any]:
 
-        total_users = self.users.count_documents({})
-
-        paid_users = self.users.count_documents(
-            {"paid": True}
+        total_users = (
+            self.users.count_documents({})
         )
 
-        trial_users = self.users.count_documents(
-            {"trial_used": True}
+        paid_users = (
+            self.users.count_documents(
+                {"paid": True}
+            )
         )
 
-        banned_users = self.users.count_documents(
-            {"banned": True}
+        trial_users = (
+            self.users.count_documents(
+                {"trial_used": True}
+            )
         )
 
-        total_tests = self.tests.count_documents({})
-
-        total_jobs = self.jobs.count_documents({})
-
-        queued_jobs = self.jobs.count_documents(
-            {"status": "queued"}
+        banned_users = (
+            self.users.count_documents(
+                {"banned": True}
+            )
         )
 
-        completed_jobs = self.jobs.count_documents(
-            {"status": "done"}
+        total_tests = (
+            self.tests.count_documents({})
         )
 
-        failed_jobs = self.jobs.count_documents(
-            {"status": "failed"}
+        total_jobs = (
+            self.jobs.count_documents({})
         )
 
-        total_extracts = self.extracts.count_documents({})
+        queued_jobs = (
+            self.jobs.count_documents(
+                {"status": "queued"}
+            )
+        )
+
+        completed_jobs = (
+            self.jobs.count_documents(
+                {"status": "done"}
+            )
+        )
+
+        failed_jobs = (
+            self.jobs.count_documents(
+                {"status": "failed"}
+            )
+        )
+
+        total_extracts = (
+            self.extracts.count_documents({})
+        )
 
         return {
             "total_users": total_users,
@@ -1148,9 +1536,9 @@ class MongoDatabase:
             "total_extracts": total_extracts,
         }
 
-    # ============================================================
-    # REPORT — MOST EXTRACTED EXAMS
-    # ============================================================
+    # ========================================================
+    # MOST EXTRACTED EXAMS
+    # ========================================================
 
     def most_extracted_exams(
         self,
@@ -1180,12 +1568,14 @@ class MongoDatabase:
         ]
 
         return list(
-            self.tests.aggregate(pipeline)
+            self.tests.aggregate(
+                pipeline
+            )
         )
 
-    # ============================================================
-    # REPORT — MOST EXTRACTED TESTS
-    # ============================================================
+    # ========================================================
+    # MOST EXTRACTED TESTS
+    # ========================================================
 
     def most_extracted_tests(
         self,
@@ -1211,9 +1601,9 @@ class MongoDatabase:
             .limit(limit)
         )
 
-    # ============================================================
-    # PAGINATION
-    # ============================================================
+    # ========================================================
+    # USERS PAGINATION
+    # ========================================================
 
     def get_users_page(
         self,
@@ -1221,9 +1611,14 @@ class MongoDatabase:
         per_page: int = 20,
     ) -> List[Dict[str, Any]]:
 
-        page = max(1, page)
+        page = max(
+            1,
+            page,
+        )
 
-        skip = (page - 1) * per_page
+        skip = (
+            page - 1
+        ) * per_page
 
         return list(
             self.users.find({})
@@ -1235,15 +1630,24 @@ class MongoDatabase:
             .limit(per_page)
         )
 
+    # ========================================================
+    # TESTS PAGINATION
+    # ========================================================
+
     def get_tests_page(
         self,
         page: int = 1,
         per_page: int = 20,
     ) -> List[Dict[str, Any]]:
 
-        page = max(1, page)
+        page = max(
+            1,
+            page,
+        )
 
-        skip = (page - 1) * per_page
+        skip = (
+            page - 1
+        ) * per_page
 
         return list(
             self.tests.find({})
