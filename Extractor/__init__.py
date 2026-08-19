@@ -1,3 +1,10 @@
+import threading
+from web_server import run_web
+
+threading.Thread(
+    target=run_web,
+    daemon=True
+).start()
 import asyncio
 import logging
 import os
