@@ -1,0 +1,1153 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TCS Converted Test • Self Contained JSON</title>
+    
+    <script>
+      window.MathJax = {
+        tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+        options: { skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre'] },
+        startup: {
+          pageReady: () => {
+            return MathJax.startup.defaultPageReady();
+          }
+        }
+      };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background-color: #333; display: flex; justify-content: center; }
+        .app-container { width: 100%; max-width: 414px; height: 100vh; background-color: #f8f9fa; position: relative; overflow-y: auto; overflow-x: hidden; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        .hidden { display: none !important; }
+
+        /* --- START SCREEN CSS --- */
+        #start-screen { background-color: rgba(85, 85, 85, 0.9); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px 0; }
+        .start-card { background: #fff; width: 90%; border-radius: 20px; padding: 24px; max-height: 90vh; overflow-y: auto;}
+        .start-card h2 { font-size: 16px; margin-bottom: 16px; border-bottom: 1px solid #eee; padding-bottom: 10px; font-weight: bold; text-align: center;}
+        
+        .sub-card { display: flex; justify-content: space-between; align-items: center; background: #f0f4f8; padding: 12px 16px; border-radius: 8px; border: 1px solid #d9e2ec; margin-bottom: 8px; font-size: 14px; transition: 0.2s;}
+        .sub-card.fixed { border-left: 4px solid #1a237e; }
+        .sub-name { color: #102a43; font-weight: 600; display: flex; align-items: center;}
+        .sub-badge { background: #d9e2ec; color: #334e68; font-size: 12px; padding: 4px 10px; border-radius: 12px; font-weight: bold; }
+        
+        .opt-group-title { font-weight: bold; color: #e65100; margin: 16px 0 8px 0; font-size: 13px; }
+        .opt-card { cursor: pointer; border: 1px solid #ffcc80; background: #fff; border-left: 4px solid #ff9800; }
+        .opt-card:active { transform: scale(0.98); }
+        .opt-card.selected { background: #e8f5e9; border-color: #4caf50; border-left: 4px solid #4caf50; }
+        .opt-card.selected .sub-badge { background: #c8e6c9; color: #2e7d32; }
+        .check-icon { display: none; margin-right: 8px; font-weight: bold; font-size: 16px;}
+        .opt-card.selected .check-icon { display: inline-block; color: #4caf50; }
+        .fixed-icon { margin-right: 8px; color: #1a237e; }
+
+        .stats-box { background: #f8f9fa; padding: 16px; border-radius: 12px; border: 1px solid #eee; margin-top: 20px;}
+        .start-info { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 14px; color: #333; font-weight: bold;}
+        .start-info span:last-child { color: #1a237e; font-weight: 800;}
+        .start-info:last-child { margin-bottom: 0; }
+        .start-btn { width: 100%; background: #222; color: #fff; border: none; padding: 14px; border-radius: 10px; font-size: 16px; font-weight: bold; margin-top: 16px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1);}
+
+        .tcs-header { background: #1a237e; color: white; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 10; }
+        .tcs-timer { font-size: 18px; font-weight: bold; display: flex; align-items: center; }
+        .tcs-hamburger { font-size: 26px; cursor: pointer; color: white; }
+
+        .tcs-tabs-wrapper { background: #fff; border-bottom: 1px solid #ddd; overflow-x: auto; white-space: nowrap; position: sticky; top: 60px; z-index: 9; }
+        .tcs-tabs-wrapper::-webkit-scrollbar { display: none; }
+        .tcs-tab { display: inline-block; padding: 14px 16px; font-size: 14px; font-weight: 500; color: #555; cursor: pointer; border-bottom: 3px solid transparent; }
+        .tcs-tab.active { color: #1a237e; border-bottom: 3px solid #1a237e; font-weight: bold; }
+        .tcs-tab.locked { color: #aaa; cursor: not-allowed; }
+
+        .tcs-q-info-bar { background: #f5f5f5; padding: 10px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ddd; font-size: 13px; color: #555;}
+        .tcs-q-badge { background: #888; color: white; width: 24px; height: 24px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 8px;}
+        .tcs-marks { display: flex; gap: 10px; }
+        .tcs-m-pos { color: #4caf50; font-weight: bold;}
+        .tcs-m-neg { color: #e53935; }
+
+        .tcs-question-area { background: #fff; padding: 16px; padding-bottom: 140px; min-height: calc(100vh - 200px); }
+        .tcs-q-text, .fs-q-txt, .fs-exp-text, .sol-q-txt { white-space: pre-wrap; word-wrap: break-word; line-height: 1.6; }
+        
+        .tcs-q-text { font-size: 16px; color: #111; margin-bottom: 24px; }
+        .tcs-option { border: 1px solid #eee; border-radius: 8px; padding: 16px; margin-bottom: 12px; font-size: 15px; display: flex; align-items: center; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.02); transition: 0.2s;}
+        .tcs-option.selected { border-color: #1a237e; background: #e8eaf6; }
+        .tcs-opt-lbl { margin-right: 16px; font-weight: bold; color: #555; }
+
+        .tcs-footer { position: fixed; bottom: 0; left: 0; width: 100%; max-width: 414px; background: #fff; z-index: 10; border-top: 1px solid #ddd; display: flex; flex-direction: column;}
+        .tcs-arrows { display: flex; justify-content: space-between; padding: 8px 16px; background: #f9f9f9; border-bottom: 1px solid #eee;}
+        .tcs-arrow-btn { background: none; border: none; font-size: 20px; font-weight: bold; color: #1a237e; cursor: pointer; padding: 4px 16px;}
+        .tcs-actions-row { display: flex; padding: 8px; gap: 6px; }
+        .tcs-btn { flex: 1; padding: 10px 4px; font-size: 11px; font-weight: bold; border-radius: 4px; text-align: center; cursor: pointer; border: 1px solid #ccc; background: #fff; color: #333;}
+        .tcs-btn-submit { background: #e53935; color: white; border-color: #e53935; }
+        .tcs-btn-save { background: #039be5; color: white; border-color: #039be5; }
+
+        .tcs-drawer-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 200; opacity: 0; pointer-events: none; transition: 0.3s;}
+        .tcs-drawer-overlay.show { opacity: 1; pointer-events: auto; }
+        .tcs-drawer { position: absolute; right: 0; top: 0; width: 85%; max-width: 320px; height: 100%; background: #fff; display: flex; flex-direction: column; transform: translateX(100%); transition: 0.3s ease-out; box-shadow: -2px 0 10px rgba(0,0,0,0.1);}
+        .tcs-drawer-overlay.show .tcs-drawer { transform: translateX(0); }
+        .tcs-dr-header { display: flex; }
+        .tcs-dr-tab { flex: 1; text-align: center; padding: 16px; font-size: 14px; font-weight: bold; border-bottom: 2px solid #ddd; color: #888; }
+        .tcs-dr-tab.active { color: #111; border-bottom-color: #111; }
+        .tcs-dr-close { padding: 16px; font-size: 20px; cursor: pointer; color: #555; }
+        .tcs-dr-content { padding: 16px; overflow-y: auto; flex: 1; }
+        .tcs-legend { margin-bottom: 20px; }
+        .tcs-leg-item { display: flex; align-items: center; font-size: 14px; font-weight: bold; margin-bottom: 12px; color: #111;}
+        .tcs-circ { width: 16px; height: 16px; border-radius: 50%; margin-right: 12px; }
+        .c-marked { border: 2px solid #fbc02d; } .c-attempt { background: #1976d2; } .c-unattempt { border: 2px solid #bdbdbd; }
+        .tcs-accordion { margin-bottom: 10px; border-top: 1px solid #eee; padding-top: 10px;}
+        .tcs-acc-header { display: flex; justify-content: space-between; font-weight: bold; font-size: 14px; margin-bottom: 8px; cursor: pointer; color: #111;}
+        .tcs-acc-stats { display: flex; gap: 16px; font-size: 12px; color: #555; margin-bottom: 12px;}
+        .tcs-q-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; display: none;}
+        .tcs-q-grid.open { display: grid; }
+        .tcs-q-box { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold; cursor: pointer; border-radius: 4px;}
+        .st-ans { background: #1976d2; color: #fff; } .st-not-ans { border: 2px solid #bdbdbd; color: #333; } .st-mark { border: 2px solid #fbc02d; color: #333; }
+        .st-mark-ans { border: 2px solid #fbc02d; background: #e3f2fd; color: #333; position: relative;}
+        .st-mark-ans::after { content: '✓'; position: absolute; bottom: -4px; right: 0; color: #1976d2; font-size: 10px; font-weight: 900;}
+
+        #submit-screen { background: #f5f5f5; min-height: 100vh; padding: 20px; }
+        .submit-header { font-size: 18px; font-weight: bold; text-align: center; margin-bottom: 20px; background: #fff; padding: 16px; border-radius: 12px;}
+        .section-summary-card { background: #fff; border: 1px solid #e0e0e0; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+        .stat-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f5f5f5; font-size: 14px; }
+        .confirm-actions { text-align: center; margin-top: 20px; padding-bottom: 40px;}
+        .btn-yes { background: #1a237e; color: white; border: none; padding: 12px 30px; border-radius: 8px; font-size: 16px; margin-right: 10px; cursor: pointer;}
+        .btn-no { background: #fff; color: #555; border: 1px solid #ccc; padding: 12px 30px; border-radius: 8px; font-size: 16px; cursor: pointer;}
+
+        #analysis-screen { background: #f5f5f5; min-height: 100vh; padding-bottom: 40px;}
+        .analysis-header { background: #111; color: white; padding: 16px; display: flex; align-items: center; position: sticky; top: 0; z-index: 10;}
+        .a-card { background: #fff; border-radius: 16px; padding: 20px; margin: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.03); }
+        .sc-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px; text-align: center; }
+        .sc-item { display: flex; flex-direction: column; align-items: center; }
+        .sc-icon { width: 56px; height: 56px; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 24px; margin-bottom: 12px; }
+        .sc-val { font-size: 16px; font-weight: 800; color: #000; margin-bottom: 4px; }
+        .sc-lbl { font-size: 13px; color: #888; }
+        .ic-score { background: #e8eaf6; color: #1a237e; } .ic-rank { background: #f3e5f5; color: #7b1fa2; } .ic-perc { background: #fce4ec; color: #c2185b; }
+        .ic-corr { background: #e8f5e9; color: #388e3c; } .ic-inc { background: #ffebee; color: #d32f2f; } .ic-una { background: #eceff1; color: #5c6bc0; } .ic-acc { background: #fff3e0; color: #f57c00; }
+        .donut-container { display: flex; justify-content: center; margin: 20px 0; }
+        .donut-chart { width: 200px; height: 200px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+        .donut-inner { width: 130px; height: 130px; background: #fff; border-radius: 50%; }
+        .chart-legend { display: flex; justify-content: center; gap: 16px; font-size: 13px; color: #555; margin-bottom: 10px;}
+        .legend-item { display: flex; align-items: center; gap: 6px; }
+        .dot { width: 14px; height: 14px; border-radius: 4px; }
+        .bg-green { background: #4caf50; } .bg-red { background: #e53935; } .bg-cyan { background: #5c6bc0; }
+        .comp-table { width: 100%; border-collapse: collapse; text-align: center; font-size: 13px; border: 1px solid #eee; border-radius: 8px; overflow: hidden; margin-top: 10px;}
+        .comp-table th, .comp-table td { padding: 10px 6px; border: 1px solid #eee; }
+        .col-you { background-color: #f3e5f5; } .col-top { background-color: #e8f5e9; } .col-avg { background-color: #e8eaf6; }
+        .row-lbl { color: #888; text-align: left; background: #fff; }
+        .sc-you { background: #ce93d8; color: #000; font-weight: bold;} .sc-top { background: #ba68c8; color: #fff; font-weight: bold;} .sc-avg { background: #ce93d8; font-weight: bold;}
+        .ac-you { background: #e8eaf6; } .ac-top { background: #e0f7fa; } .ac-avg { background: #e8eaf6; }
+        .cr-you { background: #fff3e0; } .cr-top { background: #ffe0b2; } .cr-avg { background: #fff3e0; }
+        .wr-you { background: #ffebee; } .wr-top { background: #fff; } .wr-avg { background: #ffebee; }
+        .tm-you { background: #fff9c4; } .tm-top { background: #fff59d; } .tm-avg { background: #fff9c4; }
+        .time-stats-box { display: flex; gap: 10px; height: 130px; margin-top: 20px;}
+        .ts-left { flex: 1.2; background: #4caf50; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 15px;}
+        .ts-right { flex: 1; display: flex; flex-direction: column; gap: 10px; }
+        .ts-rt-top { flex: 0.5; background: #5c6bc0; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 13px;}
+        .ts-rt-bot { flex: 1; background: #ef5350; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 15px;}
+        .sec-title { font-size: 18px; font-weight: bold; margin: 24px 16px 12px 16px; }
+        .subj-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .subj-name { font-size: 16px; font-weight: bold; }
+        .black-circle { width: 60px; height: 60px; background: #1a237e; border-radius: 50%; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .black-circle span:first-child { font-size: 11px; color: #c5cae9; }
+        .black-circle span:last-child { font-size: 16px; font-weight: bold; }
+        .subj-q-stats { text-align: center; font-size: 14px; font-weight: bold; margin-bottom: 12px; color: #000;}
+        .time-split { display: flex; justify-content: space-between; text-align: center; font-size: 12px; }
+        .time-split .col { flex: 1; }
+        .c-green { color: #4caf50; } .c-red { color: #e53935; } .c-grey { color: #888; }
+        .val-num { font-size: 15px; font-weight: bold; margin: 4px 0;}
+        .val-time { color: #555; font-size: 12px;}
+
+        #solutions-screen { background: #f5f5f5; min-height: 100vh; padding-bottom: 40px;}
+        .sol-header { background: #fff; padding: 16px; display: flex; justify-content: space-between; align-items: center; font-size: 20px; font-weight: bold; border-bottom: 1px solid #eee; position: sticky; top: 0; z-index: 10;}
+        .filters { display: flex; gap: 10px; padding: 16px; background: #fff; overflow-x: auto; border-bottom: 1px solid #eee;}
+        .filters::-webkit-scrollbar { display: none; }
+        .flt-btn { padding: 8px 16px; border-radius: 8px; border: none; font-size: 13px; font-weight: 500; color: #555; background: #f0f0f0; white-space: nowrap; cursor: pointer; }
+        .flt-active { background: #e8eaf6; color: #1a237e; }
+        .sol-container { padding: 16px; }
+        .sol-item { display: flex; gap: 12px; position: relative; margin-bottom: 16px; }
+        .sol-num-col { display: flex; flex-direction: column; align-items: center; width: 40px;}
+        .sol-num { width: 36px; height: 36px; background: #f0f0f0; border-radius: 18px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; position: relative; z-index: 2;}
+        .sol-status-icon { position: absolute; right: -6px; bottom: -2px; width: 20px; height: 20px; border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; font-size: 12px; border: 2px solid #fff;}
+        .st-corr { background: #4caf50; } .st-wr { background: #e53935; } .st-una { background: #ccc; }
+        .sol-line { width: 2px; background: #e0e0e0; flex-grow: 1; margin-top: -10px; margin-bottom: -20px; z-index: 1;}
+        .sol-card { background: #fff; border-radius: 12px; padding: 16px; flex: 1; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .sol-sec-badge { display: inline-block; background: #e8eaf6; color: #1a237e; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; margin-bottom: 12px; }
+        .sol-q-txt { font-size: 15px; color: #333; margin-bottom: 16px; }
+
+        #full-sol-screen { background: #fff; min-height: 100vh; padding-bottom: 80px;}
+        .fs-header { background: #fff; padding: 16px; display: flex; justify-content: space-between; align-items: center; font-size: 20px; font-weight: bold; border-bottom: 1px solid #eee; position: sticky; top: 0; z-index: 10;}
+        .fs-q-info { display: flex; justify-content: space-between; align-items: center; padding: 16px; border-bottom: 1px solid #eee;}
+        .fs-q-pill { background: #e0e0e0; padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: bold; }
+        .fs-time { font-size: 13px; color: #888; }
+        .fs-content { padding: 16px; }
+        .fs-q-txt { font-size: 16px; color: #111; margin-bottom: 24px;}
+        .fs-opt { border: 1px solid #ccc; border-radius: 8px; padding: 14px; margin-bottom: 12px; font-size: 15px; display: flex; justify-content: space-between; align-items: center;}
+        .fs-opt.correct { border: 2px solid #4caf50; background: #f1f8e9; }
+        .fs-opt.wrong { border: 2px solid #e53935; background: #ffebee; }
+        .fs-opt-perc { font-size: 12px; font-weight: bold; color: #4caf50; }
+        .fs-exp-title { font-size: 16px; font-weight: bold; margin: 24px 0 10px 0; color: #000; }
+        .fs-exp-text { font-size: 15px; color: #333; background: #f9f9f9; padding: 16px; border-radius: 8px; }
+        .fs-bottom-bar { position: fixed; bottom: 0; left: 0; width: 100%; max-width: 414px; background: #fff; padding: 12px 16px; border-top: 1px solid #eee; display: flex; justify-content: flex-end; z-index: 10;}
+    
+        /* Candidate Login */
+        #candidate-login-screen{position:fixed;inset:0;z-index:5000;background:linear-gradient(135deg,#eef2ff,#c7d2fe);display:flex;align-items:center;justify-content:center;padding:20px;overflow-y:auto}
+        .candidate-login-card{width:min(94%,460px);background:#fff;border-radius:24px;padding:26px;box-shadow:0 15px 45px rgba(0,0,0,.18)}
+        .candidate-login-card h1{text-align:center;color:#1a237e;font-size:23px;margin-bottom:7px}
+        .candidate-login-card .login-sub{text-align:center;color:#666;font-size:13px;line-height:1.5;margin-bottom:20px}
+        .candidate-field{margin-bottom:13px}
+        .candidate-field label{display:block;font-size:13px;font-weight:700;color:#333;margin-bottom:6px}
+        .candidate-field input,.candidate-field select{width:100%;padding:13px;border:1px solid #d5d9e2;border-radius:10px;font-size:14px;background:#fff;outline:none}
+        .candidate-field input:focus,.candidate-field select:focus{border-color:#1a237e;box-shadow:0 0 0 3px rgba(26,35,126,.08)}
+        .candidate-start-btn{width:100%;margin-top:8px;padding:14px;border:0;border-radius:12px;background:#1a237e;color:#fff;font-size:16px;font-weight:800;cursor:pointer}
+        .candidate-error{min-height:20px;text-align:center;color:#d32f2f;font-size:13px;margin-top:9px;font-weight:600}
+        .candidate-badge{font-size:11px;background:#e8eaf6;color:#1a237e;padding:4px 8px;border-radius:12px;font-weight:700}
+</style>
+<style id="candidate-login-final-css">
+#candidate-login-final{position:fixed;inset:0;z-index:999999;background:linear-gradient(135deg,#eef2ff,#c7d2fe);display:flex;align-items:center;justify-content:center;padding:18px;overflow:auto}
+#candidate-login-final .cl-card{width:min(94%,470px);background:#fff;border-radius:24px;padding:24px;box-shadow:0 18px 55px rgba(0,0,0,.2)}
+#candidate-login-final h1{text-align:center;color:#1a237e;font-size:24px;margin:8px 0}
+#candidate-login-final .cl-sub{text-align:center;color:#64748b;font-size:13px;line-height:1.5;margin-bottom:18px}
+#candidate-login-final label{display:block;font-size:13px;font-weight:700;color:#334155;margin:10px 0 5px}
+#candidate-login-final input,#candidate-login-final select{width:100%;padding:12px;border:1px solid #d5d9e2;border-radius:10px;font-size:14px;background:#fff}
+#candidate-login-final button{width:100%;padding:14px;margin-top:15px;border:0;border-radius:12px;background:#1a237e;color:#fff;font-weight:800;font-size:15px}
+#candidate-login-final .err{min-height:20px;text-align:center;color:#d32f2f;font-size:12px;margin-top:8px}
+</style></head>
+<body>
+<div id="candidate-login-final">
+<div class="cl-card">
+<div style="text-align:center;font-size:11px;font-weight:800;color:#1a237e" id="cl-exam-final">CBT • TCS Test</div>
+<h1>👤 Candidate Login</h1>
+<div class="cl-sub">Test शुरू करने से पहले अपनी जानकारी भरें।</div>
+<label>Candidate Name *</label><input id="cl-name-final" autocomplete="name" placeholder="अपना नाम लिखें">
+<label>Father Name *</label><input id="cl-father-final" placeholder="पिता का नाम">
+<label>District *</label><input id="cl-district-final" placeholder="जिला">
+<label>State / UT *</label><select id="cl-state-final"><option value="">-- State / UT चुनें --</option><option value="आंध्र प्रदेश">आंध्र प्रदेश</option><option value="अरुणाचल प्रदेश">अरुणाचल प्रदेश</option><option value="असम">असम</option><option value="बिहार">बिहार</option><option value="छत्तीसगढ़">छत्तीसगढ़</option><option value="गोवा">गोवा</option><option value="गुजरात">गुजरात</option><option value="हरियाणा">हरियाणा</option><option value="हिमाचल प्रदेश">हिमाचल प्रदेश</option><option value="झारखंड">झारखंड</option><option value="कर्नाटक">कर्नाटक</option><option value="केरल">केरल</option><option value="मध्य प्रदेश">मध्य प्रदेश</option><option value="महाराष्ट्र">महाराष्ट्र</option><option value="मणिपुर">मणिपुर</option><option value="मेघालय">मेघालय</option><option value="मिज़ोरम">मिज़ोरम</option><option value="नागालैंड">नागालैंड</option><option value="ओडिशा">ओडिशा</option><option value="पंजाब">पंजाब</option><option value="राजस्थान">राजस्थान</option><option value="सिक्किम">सिक्किम</option><option value="तमिलनाडु">तमिलनाडु</option><option value="तेलंगाना">तेलंगाना</option><option value="त्रिपुरा">त्रिपुरा</option><option value="उत्तर प्रदेश">उत्तर प्रदेश</option><option value="उत्तराखंड">उत्तराखंड</option><option value="पश्चिम बंगाल">पश्चिम बंगाल</option><option value="अंडमान और निकोबार द्वीपसमूह">अंडमान और निकोबार द्वीपसमूह</option><option value="चंडीगढ़">चंडीगढ़</option><option value="दादरा और नगर हवेली और दमन और दीव">दादरा और नगर हवेली और दमन और दीव</option><option value="दिल्ली">दिल्ली</option><option value="जम्मू और कश्मीर">जम्मू और कश्मीर</option><option value="लद्दाख">लद्दाख</option><option value="लक्षद्वीप">लक्षद्वीप</option><option value="पुडुचेरी">पुडुचेरी</option></select>
+<label>Gender *</label><select id="cl-gender-final"><option value="">-- Gender चुनें --</option><option value="Male">Male / पुरुष</option><option value="Female">Female / महिला</option><option value="Other">Other / अन्य</option></select>
+<button onclick="startCandidateFinal()">Continue to Test ➜</button>
+<div class="err" id="cl-error-final"></div>
+</div></div>
+
+
+
+<div class="app-container">
+
+    <div id="start-screen">
+        <div class="start-card">
+            <h2 style="color: #1a237e; border-bottom: 1px solid #eee; padding-bottom: 12px;">(TCS Pattern) Mock Test</h2>
+            
+            <div id="subjects-selection-container"></div>
+            <div style="margin-top:12px;padding:10px 12px;background:#eef2ff;
+                        border:1px solid #c7d2fe;border-radius:10px;
+                        color:#3730a3;font-size:12px;text-align:center;">
+                🟢 <b>JSON DATA • SELF CONTAINED</b><br>
+                यह test किसी external API / GitHub link से questions load नहीं करता।
+            </div>
+        
+            
+            <div class="stats-box">
+                <div class="start-info"><span>Total Questions:</span> <span id="stat-qs">--</span></div>
+                <div class="start-info"><span>Total Time:</span> <span id="stat-time">--</span></div>
+                <div class="start-info"><span>Maximum Marks:</span> <span id="stat-marks">--</span></div>
+            </div>
+            
+            <button class="start-btn" onclick="startTest()">Loading Test...</button>
+        </div>
+    </div>
+
+    <div id="live-test-screen" class="hidden">
+        <div class="tcs-header">
+            <div>
+                <div id="candidate-display" style="font-size:11px;margin-bottom:2px;opacity:.9;"></div>
+                <div class="tcs-timer">
+                    <span id="timer-lbl" style="font-size:11px;background:#e53935;padding:2px 6px;border-radius:10px;margin-right:6px;font-weight:normal;">Time Left</span> 
+                    <span id="tcs-timer-display">00:15:00</span>
+                </div>
+            </div>
+            <div class="tcs-hamburger" onclick="toggleTcsPalette()">≡</div>
+        </div>
+        
+        <div class="tcs-tabs-wrapper" id="tcs-tabs-container"></div>
+
+        <div class="tcs-q-info-bar">
+            <div style="display: flex; align-items: center;">
+                <div class="tcs-q-badge" id="tcs-q-num">1</div>
+                <span id="tcs-q-time" style="color: #888;">00:00</span>
+            </div>
+            <div class="tcs-marks">
+                <span class="tcs-m-pos">+2.00</span>
+                <span class="tcs-m-neg">-0.25</span>
+                <span style="color:#aaa;">⚠️</span>
+            </div>
+        </div>
+
+        <div class="tcs-question-area">
+            <div class="tcs-q-text" id="tcs-q-text">Loading...</div>
+            <div id="tcs-options-container"></div>
+        </div>
+        
+        <div class="tcs-footer">
+            <div class="tcs-arrows">
+                <button class="tcs-arrow-btn" onclick="prevQuestion()">❮</button>
+                <button class="tcs-arrow-btn" onclick="nextQuestion()">❯</button>
+            </div>
+            <div class="tcs-actions-row">
+                <button class="tcs-btn tcs-btn-submit" id="btn-submit-dynamic" onclick="handleDynamicSubmit()">Submit Quiz</button>
+                <button class="tcs-btn" onclick="markForReview()">Mark & Next</button>
+                <button class="tcs-btn" onclick="clearResponse()">Clear Response</button>
+                <button class="tcs-btn tcs-btn-save" onclick="saveAndNext()">Save & Next</button>
+            </div>
+        </div>
+
+        <div class="tcs-drawer-overlay" id="tcs-palette">
+            <div class="tcs-drawer">
+                <div class="tcs-dr-header">
+                    <div class="tcs-dr-tab active">Grid View</div>
+                    <div class="tcs-dr-tab" style="font-weight: normal; border-bottom: 2px solid #ddd;">List View</div>
+                    <div class="tcs-dr-close" onclick="toggleTcsPalette()">✕</div>
+                </div>
+                
+                <div class="tcs-dr-content">
+                    <div class="tcs-legend">
+                        <div class="tcs-leg-item"><div class="tcs-circ c-marked"></div> Marked For Review</div>
+                        <div class="tcs-leg-item"><div class="tcs-circ c-attempt"></div> Attempted</div>
+                        <div class="tcs-leg-item"><div class="tcs-circ c-unattempt"></div> Unattempted</div>
+                    </div>
+
+                    <div id="tcs-accordion-container"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="submit-screen" class="hidden">
+        <div class="submit-header">Submit Test</div>
+        <div id="submit-summary-container"></div>
+        <div class="confirm-actions">
+            <h3>Are you sure you want to submit?</h3>
+            <button class="btn-yes" onclick="submitTest()">Yes</button>
+            <button class="btn-no" onclick="closeSubmit()">No</button>
+        </div>
+    </div>
+
+    <div id="analysis-screen" class="hidden">
+        <div class="analysis-header"><h1 style="font-size: 18px; margin: 0 auto;">Analysis</h1></div>
+        <div class="a-card" style="margin-top: 20px;">
+            <div class="sc-grid">
+                <div class="sc-item"><div class="sc-icon ic-score">🏅</div><div class="sc-val" id="res-score">0/40</div><div class="sc-lbl">Your Score</div></div>
+                <div class="sc-item"><div class="sc-icon ic-rank">🏆</div><div class="sc-val" id="res-rank">--</div><div class="sc-lbl">Rank</div></div>
+                <div class="sc-item"><div class="sc-icon ic-perc">👥</div><div class="sc-val" id="res-perc">--</div><div class="sc-lbl">Percentile</div></div>
+            </div>
+            <div class="sc-grid">
+                <div class="sc-item"><div class="sc-icon ic-corr">✓</div><div class="sc-val" id="res-correct">0</div><div class="sc-lbl">Correct</div></div>
+                <div class="sc-item"><div class="sc-icon ic-inc">✕</div><div class="sc-val" id="res-incorrect">0</div><div class="sc-lbl">Incorrect</div></div>
+                <div class="sc-item"><div class="sc-icon ic-una">−</div><div class="sc-val" id="res-unatt">0</div><div class="sc-lbl">Unattempted</div></div>
+            </div>
+            <div style="text-align: center; margin-top: 10px;">
+                <div class="sc-icon ic-acc" style="border-radius: 16px; margin: 0 auto 10px auto;">🎯</div><div class="sc-val" id="res-acc">0%</div><div class="sc-lbl">Accuracy</div>
+            </div>
+        </div>
+        <div class="a-card">
+            <h2 style="font-size: 18px; text-align: center; margin-bottom: 16px;">Comparison</h2>
+            <table class="comp-table">
+                <thead><tr><th style="border:none;"></th><th class="col-you">You</th><th class="col-top">Topper</th><th class="col-avg">Avg</th></tr></thead>
+                <tbody>
+                    <tr><td class="row-lbl">Score</td><td class="sc-you" id="cmp-score">0.0</td><td class="sc-top" id="cmp-top">--</td><td class="sc-avg" id="cmp-avg">--</td></tr>
+                    <tr><td class="row-lbl">Accuracy</td><td class="ac-you" id="cmp-acc">0%</td><td class="ac-top" id="cmp-top-a">95%</td><td class="ac-avg" id="cmp-avg-a">55%</td></tr>
+                    <tr><td class="row-lbl">Correct</td><td class="cr-you" id="cmp-c">0</td><td class="cr-top" id="cmp-top-c">--</td><td class="cr-avg" id="cmp-avg-c">--</td></tr>
+                    <tr><td class="row-lbl">Wrong</td><td class="wr-you" id="cmp-w">0</td><td class="wr-top" id="cmp-top-w">--</td><td class="wr-avg" id="cmp-avg-w">--</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="a-card">
+            <div class="donut-container"><div class="donut-chart" id="res-donut"><div class="donut-inner"></div></div></div>
+            <div class="chart-legend">
+                <div class="legend-item"><div class="dot bg-green"></div>Correct</div>
+                <div class="legend-item"><div class="dot bg-red"></div>Incorrect</div>
+                <div class="legend-item"><div class="dot bg-cyan"></div>Unattempted</div>
+            </div>
+            <h3 style="text-align: center; margin-top: 30px; font-size: 18px;">Time Stats</h3>
+            <div class="time-stats-box">
+                <div class="ts-left">Correct</div>
+                <div class="ts-right"><div class="ts-rt-top">Unattempted</div><div class="ts-rt-bot">Incorrect</div></div>
+            </div>
+        </div>
+        <div class="sec-title">Section Wise Stats</div>
+        <div id="analysis-sections-container"></div>
+        
+        <div style="padding: 16px; display: flex; flex-direction: column; gap: 12px;">
+            <button class="tcs-btn tcs-btn-submit" style="width: 100%; padding: 14px; font-size: 16px; background: #1a237e; border-color: #1a237e; border-radius: 8px;" onclick="openSolutions()">📊 Full Analysis</button>
+        </div>
+    </div>
+
+    <div id="telegram-static-v2" style="display:none"></div>
+
+    <div id="solutions-screen" class="hidden">
+        <div class="sol-header"><span style="cursor: pointer;" onclick="closeSolutions()">←</span> Solutions <span style="font-size: 24px;">A/अ</span></div>
+        <div class="filters">
+            <button class="flt-btn flt-active" onclick="filterSol('all', this)">All</button>
+            <button class="flt-btn" onclick="filterSol('correct', this)">Correct</button>
+            <button class="flt-btn" onclick="filterSol('incorrect', this)">Incorrect</button>
+            <button class="flt-btn" onclick="filterSol('unattempted', this)">Unattempted</button>
+        </div>
+        <div class="sol-container" id="sol-list-container"></div>
+    </div>
+
+    <div id="full-sol-screen" class="hidden">
+        <div class="fs-header"><span style="cursor: pointer;" onclick="closeFullSol()">←</span> Full Solution <span style="font-size: 24px;">A/अ</span></div>
+        <div class="fs-q-info"><div class="fs-q-pill" id="fs-q-num">Question 1</div><div class="fs-time" id="fs-q-time">Time taken: 0 secs</div></div>
+        <div class="fs-content">
+            <div class="fs-q-txt" id="fs-q-txt">Q Text</div>
+            <div id="fs-options-container"></div>
+            <div class="fs-exp-title">Full Solution</div>
+            <div class="fs-exp-text" id="fs-exp-text">Explanation</div>
+            <div id="telegram-after-solution" style="margin-top:20px;padding:14px 0 6px;"></div>
+        </div>
+        <div class="fs-bottom-bar"><button class="tcs-btn tcs-btn-submit" style="background: #1a237e; border-color: #1a237e; border-radius: 24px; padding: 12px 30px;" onclick="nextFullSol()">Next</button></div>
+    </div>
+
+</div>
+
+<script>
+    // 🔥 PASTE YOUR HARDCODED JSON DATA HERE 🔥
+    const hardjson = {
+      "time": 60,
+      "pos": 2,
+      "neg": 0.25,
+      "test_mode": "overall",
+      "questions": [
+        {
+          "section": "General Intelligence & Reasoning",
+          "time": 15,
+          "questions": [
+            {
+              "text": "Find the odd one out: 2, 4, 8, 16, 31, 64",
+              "options": ["8", "16", "31", "64"],
+              "correct": 2,
+              "exp": "The pattern is multiplied by 2. 16 * 2 should be 32, not 31."
+            }
+          ]
+        },
+        {
+          "section": "General Knowledge",
+          "time": 15,
+          "questions": [
+            {
+              "text": "What is the capital of India?",
+              "options": ["Mumbai", "New Delhi", "Kolkata", "Chennai"],
+              "correct": 1,
+              "exp": "New Delhi is the official capital of India."
+            }
+          ]
+        }
+      ]
+    };
+
+    let testData = [];
+    let originalTestData = []; 
+    let apiDataRef = null;     
+    let currentSecIdx = 0, currentQIdx = 0; 
+    let timerInterval, timeRemaining = Number(hardjson && hardjson.time ? hardjson.time * 60 : 15 * 60);
+    let qStartTime = Date.now();
+    let currentFilter = 'all', allQsFlat = [], currentFlatIdx = 0;
+
+    let testMode = 'overall';
+    let isTimerActive = true;
+    
+    window.selectedOptionalSubjects = {};
+
+    function isImageUrl(url) {
+        if (!url) return false;
+        let str = url.toString().trim();
+        return str.startsWith("http://") || str.startsWith("https://") || str.match(/\.(jpeg|jpg|gif|png|webp|svg)(\?.*)?$/i) != null;
+    }
+
+    function formatMathText(text) {
+        if (!text) return "";
+        return text.toString().replace(/\\frac{([^}]+)}{([^}]+)}/g, '\\(\\frac{$1}{$2}\\)');
+    }
+
+    function triggerMathJax() {
+        if (window.MathJax && window.MathJax.typesetPromise) {
+            MathJax.typesetPromise().catch((err) => console.log('MathJax error: ' + err.message));
+        }
+    }
+
+
+    (function applyConvertedSourceMeta(){
+        try {
+            const title = window.__CONVERTED_SOURCE__;
+            if (!title) return;
+            document.title = title + ' - TCS Test';
+
+            const h = document.querySelector('#start-screen .start-card h2');
+            if (h) h.innerText = '(TCS Pattern) CBT • ' + title;
+        } catch(e) {}
+    })();
+
+
+    // Candidate login
+    let candidateInfo = null;
+
+    
+
+    
+
+    window.onload = function() {
+        restoreCandidateFinal();
+        const startBtn = document.querySelector('.start-btn');
+        if(startBtn) { startBtn.innerText = "Loading Test..."; startBtn.disabled = true; }
+
+        try {
+            // Load data directly from hardjson
+            const data = hardjson;
+            apiDataRef = data;
+
+            if (!data || (!data.questions && !Array.isArray(data))) { 
+                alert("Invalid Hardcoded JSON!"); 
+                if(startBtn) startBtn.innerText = "Error"; 
+                return; 
+            }
+
+            originalTestData = data.questions || data; 
+            testMode = originalTestData[0].test_mode || data.test_mode || 'overall';
+            
+            let optionalGroups = {};
+            let compulsorySubjects = [];
+
+            originalTestData.forEach(sec => {
+                if (sec.optional_group && sec.optional_group.trim() !== "") {
+                    let groupName = sec.optional_group.trim();
+                    if (!optionalGroups[groupName]) optionalGroups[groupName] = [];
+                    optionalGroups[groupName].push(sec);
+                } else {
+                    compulsorySubjects.push(sec);
+                }
+            });
+
+            let subjectHtml = `
+                <div style="font-weight:bold; color:#1a237e; border-bottom: 2px solid #e8eaf6; padding-bottom: 8px; margin-bottom: 12px; font-size: 15px; display: flex; align-items: center;">
+                    📚 Subjects in this Test:
+                </div>
+                <div>
+            `;
+
+            compulsorySubjects.forEach(sec => {
+                let qCount = sec.questions ? sec.questions.length : 0;
+                subjectHtml += `
+                <div class="sub-card fixed">
+                    <span class="sub-name"><span class="fixed-icon">✅</span> ${sec.section}</span>
+                    <span class="sub-badge">${qCount} Qs</span>
+                </div>`;
+            });
+
+            for (let group in optionalGroups) {
+                window.selectedOptionalSubjects[group] = optionalGroups[group][0].section;
+                
+                subjectHtml += `
+                <div class="opt-group">
+                    <div class="opt-group-title">📝 Select Any One Optional Subject (${group}):</div>
+                `;
+                
+                optionalGroups[group].forEach((sec, idx) => {
+                    let qCount = sec.questions ? sec.questions.length : 0;
+                    let isSelectedClass = idx === 0 ? "selected" : "";
+                    
+                    subjectHtml += `
+                    <div class="sub-card opt-card ${isSelectedClass}" onclick="selectOptionalSubject(this, '${group}', '${sec.section}')">
+                        <span class="sub-name"><span class="check-icon">✓</span>${sec.section}</span>
+                        <span class="sub-badge">${qCount} Qs</span>
+                    </div>`;
+                });
+                
+                subjectHtml += `</div>`;
+            }
+
+            subjectHtml += `</div>`;
+            document.getElementById('subjects-selection-container').innerHTML = subjectHtml;
+
+            updateStartStatsUI();
+
+            if(startBtn) { startBtn.innerText = "Start Test"; startBtn.disabled = false; }
+        } catch (err) {
+            alert("Error loading hardcoded JSON!");
+            if(startBtn) startBtn.innerText = "JSON Error";
+        }
+    };
+
+    function selectOptionalSubject(element, group, secName) {
+        let groupContainer = element.parentElement;
+        let cards = groupContainer.querySelectorAll('.opt-card');
+        cards.forEach(c => c.classList.remove('selected'));
+        
+        element.classList.add('selected');
+        window.selectedOptionalSubjects[group] = secName;
+        updateStartStatsUI();
+    }
+
+    function updateStartStatsUI() {
+        let selectedOptionals = Object.values(window.selectedOptionalSubjects || {});
+
+        let totalQs = 0;
+        let totalTime = 0;
+
+        originalTestData.forEach(sec => {
+            if (sec.optional_group && sec.optional_group.trim() !== "") {
+                if (!selectedOptionals.includes(sec.section)) return;
+            }
+            totalQs += sec.questions ? sec.questions.length : 0;
+            totalTime += sec.time !== undefined ? sec.time : 15;
+        });
+
+        let displayTime = 0;
+        if (testMode === 'overall') {
+            displayTime = apiDataRef.time !== undefined ? apiDataRef.time * 60 : totalTime * 60;
+        }
+
+        isTimerActive = true;
+        if ((apiDataRef.time === 0) || (originalTestData[0].time === 0 && testMode === 'overall')) {
+            isTimerActive = false;
+        }
+
+        let dbPos = apiDataRef.pos !== undefined && apiDataRef.pos !== null ? Number(apiDataRef.pos) : 2;
+        let dbNeg = apiDataRef.neg !== undefined && apiDataRef.neg !== null ? Number(apiDataRef.neg) : 0.25;
+        let dbMaxMarks = totalQs * dbPos; 
+
+        document.getElementById('stat-qs').innerText = totalQs;
+        document.getElementById('stat-time').innerText = isTimerActive ? (testMode === 'overall' ? Math.floor(displayTime/60) + " mins" : "Sectional Timing") : "No Time Limit";
+        document.getElementById('stat-marks').innerText = dbMaxMarks;
+        
+        const posEl = document.querySelector('.tcs-m-pos');
+        const negEl = document.querySelector('.tcs-m-neg');
+        if(posEl) posEl.innerText = "+" + dbPos;
+        if(negEl) negEl.innerText = "-" + dbNeg;
+    }
+
+    function hideAllScreens() { document.querySelectorAll('.app-container > div').forEach(el => el.classList.add('hidden')); }
+    
+    function startTest() {
+        // Single candidate login: the final login is the only login used.
+        if(!candidateFinal){
+            const login=document.getElementById('candidate-login-final');
+            if(login) login.style.display='flex';
+            return;
+        } 
+        let elem = document.documentElement;
+        if (elem.requestFullscreen) {
+            elem.requestFullscreen().catch(err => console.log(err));
+        } else if (elem.webkitRequestFullscreen) {
+            elem.webkitRequestFullscreen();
+        } else if (elem.msRequestFullscreen) {
+            elem.msRequestFullscreen();
+        }
+
+        let selectedOptionals = Object.values(window.selectedOptionalSubjects || {});
+
+        testData = [];
+        let totalTime = 0;
+
+        originalTestData.forEach(sec => {
+            if (sec.optional_group && sec.optional_group.trim() !== "") {
+                if (!selectedOptionals.includes(sec.section)) return; 
+            }
+            
+            let secCopy = JSON.parse(JSON.stringify(sec)); 
+            if(secCopy.questions) {
+                secCopy.questions.forEach(q => {
+                    q.userAns = null;
+                    q.status = 'not_visited';
+                    q.time = 0;
+                });
+            }
+            testData.push(secCopy);
+            totalTime += secCopy.time !== undefined ? secCopy.time : 15;
+        });
+
+        if (testMode === 'overall') {
+            timeRemaining = apiDataRef.time !== undefined ? apiDataRef.time * 60 : totalTime * 60;
+        } else {
+            timeRemaining = testData[0].time * 60; 
+        }
+
+        hideAllScreens(); document.getElementById('live-test-screen').classList.remove('hidden'); 
+        
+        if (!isTimerActive) {
+            document.getElementById('tcs-timer-display').parentElement.style.display = 'none';
+        } else if (testMode === 'sectional') {
+            document.getElementById('timer-lbl').innerText = "Sec Time";
+            document.getElementById('btn-submit-dynamic').innerText = "Submit Sec";
+        }
+
+        loadSection(0);
+        startTimer(); 
+    }
+
+    function loadSection(sIdx) {
+        currentSecIdx = sIdx;
+        currentQIdx = 0;
+        
+        if (testMode === 'sectional') {
+            timeRemaining = (testData[sIdx].time || 15) * 60;
+        }
+        
+        renderTabs();
+        loadQuestion(sIdx, 0);
+    }
+    
+    function formatTcsTimer(totalSecs) {
+        let h = Math.floor(totalSecs / 3600);
+        let m = Math.floor((totalSecs % 3600) / 60);
+        let s = totalSecs % 60;
+        return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+    }
+
+    function startTimer() { 
+        if (!isTimerActive) return;
+        timerInterval = setInterval(() => { 
+            timeRemaining--; 
+            let display = document.getElementById('tcs-timer-display');
+            display.innerText = formatTcsTimer(timeRemaining); 
+            
+            if (timeRemaining < 60) {
+                display.style.color = "#ff5252";
+            } else {
+                display.style.color = "#ffffff";
+            }
+
+            let elapsed = Math.floor((Date.now() - qStartTime) / 1000);
+            let m = Math.floor(elapsed/60), s = elapsed%60;
+            document.getElementById('tcs-q-time').innerText = `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+
+            if(timeRemaining <= 0) {
+                if (testMode === 'sectional') {
+                    alert("सेक्शन का समय समाप्त हुआ!");
+                    if (currentSecIdx < testData.length - 1) {
+                        loadSection(currentSecIdx + 1);
+                    } else {
+                        prepareSubmit();
+                    }
+                } else {
+                    prepareSubmit(); 
+                }
+            }
+        }, 1000); 
+    }
+
+    function renderTabs() {
+        let html = ''; 
+        testData.forEach((sec, idx) => { 
+            let isActive = (idx === currentSecIdx) ? 'active' : '';
+            if (testMode === 'sectional') {
+                let isLocked = (idx !== currentSecIdx) ? 'locked' : '';
+                html += `<div class="tcs-tab ${isActive} ${isLocked}" id="tab-${idx}">${sec.section}</div>`;
+            } else {
+                html += `<div class="tcs-tab ${isActive}" id="tab-${idx}" onclick="loadSection(${idx})">${sec.section}</div>`; 
+            }
+        });
+        document.getElementById('tcs-tabs-container').innerHTML = html;
+        
+        setTimeout(() => {
+            let activeTab = document.getElementById(`tab-${currentSecIdx}`);
+            if(activeTab) activeTab.scrollIntoView({behavior: "smooth", inline: "center"});
+        }, 100);
+    }
+
+    function updateQuestionTime() { 
+        let elapsed = Math.floor((Date.now() - qStartTime) / 1000); 
+        testData[currentSecIdx].questions[currentQIdx].time += elapsed; 
+        qStartTime = Date.now(); 
+    }
+
+    function loadQuestion(secIdx, qIdx) {
+        updateQuestionTime(); currentSecIdx = secIdx; currentQIdx = qIdx;
+        let q = testData[secIdx].questions[qIdx];
+        if(q.status === 'not_visited') q.status = 'not_answered';
+
+        document.getElementById('tcs-q-num').innerText = qIdx + 1;
+        
+        let qHtml = q.text ? formatMathText(q.text) : '';
+        if (q.image_link) {
+            qHtml += `<br><img src="${q.image_link}" style="max-width:100%; margin-top:10px; display:block; border-radius:4px;">`;
+        }
+        document.getElementById('tcs-q-text').innerHTML = qHtml || 'Question';
+
+        let optionsHtml = '';
+        let optPrefix = ['A', 'B', 'C', 'D'];
+        q.options.forEach((opt, i) => { 
+            let isSel = (q.userAns === i) ? 'selected' : ''; 
+            let optContent = isImageUrl(opt) ? `<img src="${opt}" style="max-height:100px; max-width:100%; display:block; margin:4px 0; border-radius:4px;">` : formatMathText(opt);
+            optionsHtml += `<div class="tcs-option ${isSel}" onclick="selectOption(${i})"><span class="tcs-opt-lbl">${optPrefix[i]}.</span> <div style="flex:1;">${optContent}</div></div>`; 
+        });
+        document.getElementById('tcs-options-container').innerHTML = optionsHtml;
+
+        triggerMathJax();
+    }
+
+    function selectOption(optIndex) { testData[currentSecIdx].questions[currentQIdx].userAns = optIndex; loadQuestion(currentSecIdx, currentQIdx); }
+    
+    function saveAndNext() { 
+        let q = testData[currentSecIdx].questions[currentQIdx]; 
+        if(q.userAns !== null) q.status = 'answered'; 
+        else if (q.status !== 'marked') q.status = 'not_answered';
+        nextQuestion();
+    }
+    
+    function markForReview() { 
+        testData[currentSecIdx].questions[currentQIdx].status = 'marked'; 
+        nextQuestion();
+    }
+    
+    function clearResponse() {
+        testData[currentSecIdx].questions[currentQIdx].userAns = null;
+        testData[currentSecIdx].questions[currentQIdx].status = 'not_answered';
+        loadQuestion(currentSecIdx, currentQIdx);
+    }
+
+    function nextQuestion() {
+        if(currentQIdx < testData[currentSecIdx].questions.length - 1) {
+            loadQuestion(currentSecIdx, currentQIdx + 1);
+        } else {
+            if (testMode === 'overall') {
+                if(currentSecIdx < testData.length - 1) loadSection(currentSecIdx + 1);
+            } else {
+                alert("यह इस सेक्शन का आखिरी प्रश्न है। कृपया 'Submit Sec' पर क्लिक करें।");
+            }
+        }
+    }
+    
+    function prevQuestion() { 
+        if(currentQIdx > 0) {
+            loadQuestion(currentSecIdx, currentQIdx - 1); 
+        } else {
+            if (testMode === 'overall' && currentSecIdx > 0) {
+                let prevSec = currentSecIdx - 1;
+                loadQuestion(prevSec, testData[prevSec].questions.length - 1);
+            }
+        }
+    }
+
+    function toggleTcsPalette() { 
+        let drawer = document.getElementById('tcs-palette'); 
+        if(drawer.classList.contains('show')) drawer.classList.remove('show'); 
+        else { renderTcsDrawer(); drawer.classList.add('show'); } 
+    }
+
+    function renderTcsDrawer() {
+        let html = '';
+        testData.forEach((sec, sIdx) => {
+            let counts = { ans:0, notAns:0, marked:0, notVis:0 };
+            let gridHtml = '';
+            
+            sec.questions.forEach((q, qIdx) => {
+                let cls = 'st-not-ans';
+                if(q.status === 'answered') { cls = 'st-ans'; counts.ans++; } 
+                else if(q.status === 'not_answered') { cls = 'st-not-ans'; counts.notAns++; } 
+                else if(q.status === 'marked') { cls = q.userAns !== null ? 'st-mark-ans' : 'st-mark'; counts.marked++; } 
+                else { cls = 'st-not-ans'; counts.notVis++; }
+                
+                gridHtml += `<div class="tcs-q-box ${cls}" onclick="jumpToQ(${sIdx}, ${qIdx})">${qIdx+1}</div>`;
+            });
+
+            let isOpen = (sIdx === currentSecIdx) ? 'open' : '';
+
+            html += `
+            <div class="tcs-accordion">
+                <div class="tcs-acc-header" onclick="toggleAcc(${sIdx})">
+                    <span>${sec.section}</span>
+                    <span id="arr-${sIdx}">${isOpen ? '▲' : '▼'}</span>
+                </div>
+                <div class="tcs-acc-stats">
+                    <span><div class="tcs-circ c-marked" style="width:10px;height:10px;margin-right:2px;"></div> ${counts.marked.toString().padStart(2,'0')}</span>
+                    <span><div class="tcs-circ c-attempt" style="width:10px;height:10px;margin-right:2px;"></div> ${counts.ans.toString().padStart(2,'0')}</span>
+                    <span><div class="tcs-circ c-unattempt" style="width:10px;height:10px;margin-right:2px;"></div> ${(counts.notAns+counts.notVis).toString().padStart(2,'0')}</span>
+                </div>
+                <div class="tcs-q-grid ${isOpen}" id="acc-grid-${sIdx}">${gridHtml}</div>
+            </div>`;
+        });
+        document.getElementById('tcs-accordion-container').innerHTML = html;
+    }
+    
+    function toggleAcc(idx) {
+        if(testMode === 'sectional') return;
+        let grid = document.getElementById(`acc-grid-${idx}`);
+        let arr = document.getElementById(`arr-${idx}`);
+        if(grid.classList.contains('open')) { grid.classList.remove('open'); arr.innerText = '▼'; }
+        else { grid.classList.add('open'); arr.innerText = '▲'; }
+    }
+
+    function jumpToQ(sIdx, qIdx) { 
+        if (testMode === 'sectional' && sIdx !== currentSecIdx) {
+            alert("आप इस सेक्शन में जंप नहीं कर सकते।");
+            return;
+        }
+        toggleTcsPalette(); loadQuestion(sIdx, qIdx); 
+    }
+
+    function handleDynamicSubmit() {
+        if (testMode === 'sectional') {
+            if (confirm("क्या आप वाकई इस सेक्शन को सबमिट करना चाहते हैं? आप इसमें वापस नहीं आ पाएंगे।")) {
+                if (currentSecIdx < testData.length - 1) {
+                    loadSection(currentSecIdx + 1);
+                } else {
+                    prepareSubmit();
+                }
+            }
+        } else {
+            prepareSubmit();
+        }
+    }
+
+    function prepareSubmit() {
+        updateQuestionTime(); hideAllScreens(); document.getElementById('submit-screen').classList.remove('hidden');
+        let html = '';
+        testData.forEach((sec, idx) => {
+            let ans = 0, marked = 0, notVis = 0;
+            sec.questions.forEach(q => { if(q.status === 'answered') ans++; else if(q.status === 'marked') marked++; else if(q.status === 'not_visited') notVis++; });
+            html += `<div class="section-summary-card"><h2 style="margin-bottom:12px;">${sec.section}</h2><div class="stat-row"><span>Number of Questions</span> <strong>${sec.questions.length}</strong></div><div class="stat-row"><span>Answered</span> <strong>${ans}</strong></div><div class="stat-row"><span>Not Visited</span> <strong>${notVis}</strong></div></div>`;
+        });
+        document.getElementById('submit-summary-container').innerHTML = html;
+    }
+    function closeSubmit() { hideAllScreens(); document.getElementById('live-test-screen').classList.remove('hidden'); }
+
+    function formatTime(sec) { if(sec === 0) return "0 sec"; let m = Math.floor(sec/60), s = sec%60; return m > 0 ? `${m}m ${s}s` : `${s}s`; }
+
+    function submitTest() {
+        clearInterval(timerInterval); hideAllScreens(); document.getElementById('analysis-screen').classList.remove('hidden');
+
+        if (document.exitFullscreen) {
+            document.exitFullscreen().catch(err => console.log(err));
+        }
+
+        let tC = 0, tI = 0, tU = 0, secHtml = '';
+        allQsFlat = []; let globalQNum = 1;
+
+        let posMark = parseFloat(document.querySelector('.tcs-m-pos') ? document.querySelector('.tcs-m-pos').innerText.replace('+','') : 2);
+        let negMark = parseFloat(document.querySelector('.tcs-m-neg') ? document.querySelector('.tcs-m-neg').innerText.replace('-','') : 0.25);
+        if (isNaN(posMark)) posMark = 2;
+        if (isNaN(negMark)) negMark = 0.25;
+
+        testData.forEach((sec, sIdx) => {
+            let c = 0, inc = 0, u = 0, cT = 0, incT = 0, uT = 0;
+            sec.questions.forEach((q, qIdx) => {
+                let state = 'unattempted';
+                if(q.userAns === null) { u++; uT += q.time; }
+                else if(q.userAns === q.correct) { c++; cT += q.time; state = 'correct'; }
+                else { inc++; incT += q.time; state = 'incorrect'; }
+                allQsFlat.push({ ...q, secName: sec.section, globalNum: globalQNum++, state: state, secIdx: sIdx, qIdx: qIdx });
+            });
+
+            tC += c; tI += inc; tU += u;
+            let secMarks = Math.max(0, (c * posMark) - (inc * negMark));
+
+            secHtml += `<div class="a-card"><div class="subj-header"><div class="subj-name">${sec.section}</div><div class="black-circle"><span>Marks</span><span>${secMarks.toFixed(2)}</span></div></div><div class="subj-q-stats">Section Question Stats</div><div class="time-split"><div class="col"><div class="c-green">Correct</div><div class="val-num c-green">${c.toFixed(1)}</div><div class="val-time">In ${formatTime(cT)}</div></div><div class="col"><div class="c-red">Incorrect</div><div class="val-num c-red">${inc.toFixed(1)}</div><div class="val-time">In ${formatTime(incT)}</div></div><div class="col"><div class="c-grey">Unattempted</div><div class="val-num c-grey">${u.toFixed(1)}</div><div class="val-time">In ${formatTime(uT)}</div></div></div></div>`;
+        });
+
+        let totalQs = tC + tI + tU; 
+        let totalMarks = Math.max(0, (tC * posMark) - (tI * negMark));
+        let maxMarks = totalQs * posMark;
+        let acc = (tC+tI) > 0 ? ((tC / (tC+tI)) * 100).toFixed(2) : 0;
+
+        let topperScore = (maxMarks * 0.90).toFixed(2);
+        if(totalMarks > parseFloat(topperScore)) topperScore = totalMarks.toFixed(2);
+        let avgScore = (maxMarks * 0.45).toFixed(2);
+        
+        let percentile = totalMarks <= 0 ? 0 : Math.min(99.9, ((totalMarks / maxMarks) * 100) + (Math.random() * 5)).toFixed(1);
+        let rank = totalMarks <= 0 ? Math.floor(Math.random() * 5000) + 15000 : Math.floor((100 - percentile) * 120) + 1;
+
+        let topC = Math.floor(totalQs * 0.9); let topW = Math.floor(totalQs * 0.05);
+        let avgC = Math.floor(totalQs * 0.45); let avgW = Math.floor(totalQs * 0.25);
+
+        document.getElementById('res-score').innerText = `${totalMarks.toFixed(2)}/${maxMarks.toFixed(1)}`;
+        document.getElementById('res-correct').innerText = tC; 
+        document.getElementById('res-incorrect').innerText = tI; 
+        document.getElementById('res-unatt').innerText = tU; 
+        document.getElementById('res-acc').innerText = `${acc}%`;
+        
+        document.getElementById('res-rank').innerText = rank;
+        document.getElementById('res-perc').innerText = percentile + "%";
+        document.getElementById('cmp-score').innerText = `${totalMarks.toFixed(2)}`; 
+        document.getElementById('cmp-acc').innerText = `${acc}%`; 
+        document.getElementById('cmp-c').innerText = tC; 
+        document.getElementById('cmp-w').innerText = tI;
+        document.getElementById('cmp-top').innerText = topperScore;
+        document.getElementById('cmp-avg').innerText = avgScore;
+        document.getElementById('cmp-top-c').innerText = topC;
+        document.getElementById('cmp-avg-c').innerText = avgC;
+        document.getElementById('cmp-top-w').innerText = topW;
+        document.getElementById('cmp-avg-w').innerText = avgW;
+        
+        let pC = (tC / totalQs) * 100, pI = (tI / totalQs) * 100;
+        document.getElementById('res-donut').style.background = `conic-gradient(#4caf50 0% ${pC}%, #e53935 ${pC}% ${pC+pI}%, #00bcd4 ${pC+pI}% 100%)`;
+        document.getElementById('analysis-sections-container').innerHTML = secHtml;
+
+        // Telegram is intentionally shown only below Full Solution.
+        if (typeof uploadExactResultV2 === 'function') {
+            uploadExactResultV2(tC, tI, tU, totalMarks, maxMarks, totalQs);
+        }
+        if (typeof addTelegramBelowFullSolution === 'function') {
+            addTelegramBelowFullSolution();
+        }
+    }
+
+    function openSolutions() { hideAllScreens(); document.getElementById('solutions-screen').classList.remove('hidden'); renderSolutions(); }
+    function closeSolutions() { hideAllScreens(); document.getElementById('analysis-screen').classList.remove('hidden'); }
+    function filterSol(type, btn) { document.querySelectorAll('.flt-btn').forEach(b => b.classList.remove('flt-active')); btn.classList.add('flt-active'); currentFilter = type; renderSolutions(); }
+
+    function renderSolutions() {
+        let html = '';
+        allQsFlat.forEach((q, idx) => {
+            if(currentFilter !== 'all' && q.state !== currentFilter) return;
+            let iconStr = '', iconCls = '';
+            if(q.state === 'correct') { iconStr = '✓'; iconCls = 'st-corr'; } else if(q.state === 'incorrect') { iconStr = '✕'; iconCls = 'st-wr'; } else { iconStr = '−'; iconCls = 'st-una'; }
+            
+            let solQText = q.text ? formatMathText(q.text) : '';
+            let solQImg = q.image_link ? `<br><img src="${q.image_link}" style="max-width: 100%; max-height: 80px; display: block; margin-top: 5px; border-radius: 4px;">` : '';
+            let displayContent = solQText + solQImg || "Image Question";
+
+            html += `<div class="sol-item"><div class="sol-num-col"><div class="sol-num">${q.globalNum}<div class="sol-status-icon ${iconCls}">${iconStr}</div></div><div class="sol-line"></div></div><div class="sol-card"><div class="sol-sec-badge">${q.secName}</div><div class="sol-q-txt">${displayContent}</div><button class="tcs-btn tcs-btn-submit" style="padding:10px; border-radius:8px; background: #1a237e; border-color: #1a237e;" onclick="openFullSolution(${idx})">See Full Solution</button></div></div>`;
+        });
+        document.getElementById('sol-list-container').innerHTML = html;
+        triggerMathJax();
+    }
+
+    function openFullSolution(flatIdx) { currentFlatIdx = flatIdx; hideAllScreens(); document.getElementById('full-sol-screen').classList.remove('hidden'); renderFullSolution(); }
+    function closeFullSol() { hideAllScreens(); document.getElementById('solutions-screen').classList.remove('hidden'); }
+    
+    function renderFullSolution() {
+        let q = allQsFlat[currentFlatIdx];
+        document.getElementById('fs-q-num').innerText = `Question ${q.globalNum}`; 
+        document.getElementById('fs-q-time').innerText = `Time taken: ${q.time} secs`; 
+        
+        let fsQHtml = q.text ? formatMathText(q.text) : '';
+        if (q.image_link) {
+            fsQHtml += `<br><img src="${q.image_link}" style="max-width:100%; margin-top:10px; display:block; border-radius:4px;">`;
+        }
+        document.getElementById('fs-q-txt').innerHTML = fsQHtml || 'Question';
+        
+        let optHtml = '', optPrefix = ['A', 'B', 'C', 'D'];
+        q.options.forEach((opt, i) => {
+            let cls = '', rightTxt = '';
+            if(i === q.correct) { cls = 'correct'; rightTxt = '<span class="fs-opt-perc">Correct</span>'; } 
+            else if (i === q.userAns && q.userAns !== q.correct) { cls = 'wrong'; }
+            
+            let optContent = isImageUrl(opt) ? `<img src="${opt}" style="max-height:80px; max-width:100%; display:block; border-radius:4px;">` : formatMathText(opt);
+            
+            optHtml += `<div class="fs-opt ${cls}"><div style="display:flex; align-items:center;"><span>${optPrefix[i]}. &nbsp;&nbsp;</span> <div style="flex:1;">${optContent}</div></div> ${rightTxt}</div>`;
+        });
+        document.getElementById('fs-options-container').innerHTML = optHtml; 
+        
+        let expHtml = q.exp ? formatMathText(q.exp) : '';
+        if (q.exp_image_link) {
+            expHtml += `<br><img src="${q.exp_image_link}" style="max-width:100%; margin-top:10px; display:block; border-radius:4px;">`;
+        }
+        document.getElementById('fs-exp-text').innerHTML = expHtml;
+
+        triggerMathJax();
+    }
+    function nextFullSol() { if(currentFlatIdx < allQsFlat.length - 1) { currentFlatIdx++; renderFullSolution(); } else { closeFullSol(); } }
+
+
+/* ===== FINAL Candidate + Google Sheet integration ===== */
+const GOOGLE_RESULT_API_FINAL="https://script.google.com/macros/s/AKfycbzFqfO3aZ8R-x2CAkkHuhkE-lFJePh8dflhO71HfHdLsH2g9gh2fdR0Rq-TXCfC-JJBvQ/exec";
+const GOOGLE_SHEET_URL_FINAL="https://docs.google.com/spreadsheets/d/1Zq4TyFTykv32OnEyURgzkuY3_PcGix9YmCy5jaFJ2zg/edit?usp=sharing";
+let candidateFinal=null;
+let resultSentFinal=false;
+
+function startCandidateFinal(){
+ const g=id=>document.getElementById(id);
+ const data={
+   name:g('cl-name-final').value.trim(),
+   father:g('cl-father-final').value.trim(),
+   district:g('cl-district-final').value.trim(),
+   state:g('cl-state-final').value,
+   gender:g('cl-gender-final').value
+ };
+ if(!data.name||!data.father||!data.district||!data.state||!data.gender){
+   g('cl-error-final').textContent='⚠️ सभी जानकारी भरना जरूरी है।'; return;
+ }
+ candidateFinal=data;
+ try{localStorage.setItem('tcs_candidate_final',JSON.stringify(data));}catch(e){}
+ const login=g('candidate-login-final'); if(login) login.style.display='none';
+ const start=document.getElementById('start-screen'); if(start) start.classList.remove('hidden');
+ window.currentCandidate=data;
+}
+
+function restoreCandidateFinal(){
+ try{
+  const d=JSON.parse(localStorage.getItem('tcs_candidate_final')||'null');
+  if(!d)return;
+  candidateFinal=d;
+  window.candidateInfo=d;
+  const login=document.getElementById('candidate-login-final');
+  if(login) login.style.display='none';
+  const start=document.getElementById('start-screen');
+  if(start) start.classList.remove('hidden');
+  const map={'cl-name-final':d.name,'cl-father-final':d.father,'cl-district-final':d.district,'cl-state-final':d.state,'cl-gender-final':d.gender};
+  Object.entries(map).forEach(([id,v])=>{const e=document.getElementById(id);if(e)e.value=v||'';});
+ }catch(e){}
+}
+
+function uploadFinalResult(){
+ if(resultSentFinal||!candidateFinal)return;
+ const getText=id=>document.getElementById(id)?.textContent||'';
+ const num=v=>{const n=parseFloat(String(v??'').replace(/[^0-9.-]/g,''));return Number.isFinite(n)?n:0};
+ const totalQuestions=num(window.__TOTAL_QUESTIONS__)||num(window.totalQuestions)||num(document.getElementById('total-questions')?.textContent);
+ let attempted=num(getText('attempted-count'))||num(window.attemptedQuestions);
+ let right=num(getText('correct-count'))||num(window.correctAnswers);
+ let wrong=num(getText('wrong-count'))||num(window.wrongAnswers);
+ let unattempted=num(getText('unattempted-count'))||num(window.unattemptedAnswers);
+ if(!unattempted&&totalQuestions)unattempted=Math.max(0,totalQuestions-attempted);
+ if(!attempted&&totalQuestions)attempted=Math.max(0,right+wrong);
+ const score=num(window.finalScore)||num(window.score)||num(getText('final-score'))||num(getText('score'));
+ const totalMarks=num(window.__CONVERTED_TOTAL_MARKS__)||num(window.totalMarks)||num(window.testData?.total_marks)||num(getText('stat-marks'));
+ const percentage=totalMarks?Number(((score/totalMarks)*100).toFixed(2)):0;
+ const payload={testName:String(window.__CONVERTED_SOURCE__||'TCS Test'),candidateName:candidateFinal.name||'',fatherName:candidateFinal.father||'',district:candidateFinal.district||'',state:candidateFinal.state||'',gender:candidateFinal.gender||'',totalQuestions,attempted,right,wrong,unattempted,totalMarks,score,percentage};
+ const body=new URLSearchParams(); Object.entries(payload).forEach(([k,v])=>body.append(k,String(v)));
+ fetch(GOOGLE_RESULT_API_FINAL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},body}).then(()=>{resultSentFinal=true;console.log('Google Sheet: result sent');}).catch(e=>console.error('Google Sheet:',e));
+}
+
+
+
+
+function uploadExactResultV2(tC,tI,tU,totalMarks,maxMarks,totalQs){
+  if(resultSentFinal || !candidateFinal) return;
+  const payload={
+    testName:String(window.__CONVERTED_SOURCE__||"TCS Test"),
+    candidateName:candidateFinal.name||'',
+    fatherName:candidateFinal.father||'',
+    district:candidateFinal.district||'',
+    state:candidateFinal.state||'',
+    gender:candidateFinal.gender||'',
+    totalQuestions:Number(totalQs)||0,
+    attempted:(Number(tC)||0)+(Number(tI)||0),
+    right:Number(tC)||0,
+    wrong:Number(tI)||0,
+    unattempted:Number(tU)||0,
+    totalMarks:Number(maxMarks)||0,
+    score:Number(totalMarks)||0,
+    percentage:Number(maxMarks)?Number(((Number(totalMarks)/Number(maxMarks))*100).toFixed(2)):0
+  };
+  const body=new URLSearchParams(); Object.entries(payload).forEach(([k,v])=>body.append(k,String(v)));
+  fetch(GOOGLE_RESULT_API_FINAL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},body})
+    .then(()=>{resultSentFinal=true;console.log('TCS result sent to Google Sheet');})
+    .catch(err=>console.error('Google Sheet upload failed',err));
+}
+
+
+
+function addTelegramBelowFullSolution(){
+  const box=document.getElementById('telegram-after-solution');
+  if(!box || box.dataset.ready==='1') return;
+  box.dataset.ready='1';
+  box.innerHTML=`
+    <div style="font-weight:800;color:#1a237e;text-align:center;font-size:16px;margin-bottom:10px">📚 More Tests & Backup</div>
+    <a href="https://t.me/+lVCFkJZxLy00ZmFl" target="_blank" rel="noopener"
+       style="display:block;text-align:center;text-decoration:none;background:#229ED9;color:#fff;padding:13px;border-radius:12px;font-weight:800;margin-bottom:9px">
+       🚀 More Tests — Telegram Channel
+    </a>
+    <a href="https://t.me/+sGNcD5U-qkFlZjhl" target="_blank" rel="noopener"
+       style="display:block;text-align:center;text-decoration:none;background:#334155;color:#fff;padding:13px;border-radius:12px;font-weight:800">
+       🔐 Backup Channel
+    </a>`;
+}
+</script>
+</body>
+</html>
