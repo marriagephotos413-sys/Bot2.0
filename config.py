@@ -63,7 +63,8 @@ class Config:
     # DATABASE
     # ============================================================
     
-    mongo_url = os.getenv("MONGO_URL")
+    mongo_url: str
+    mongo_database: str
 
     # ============================================================
     # GITHUB
@@ -165,6 +166,7 @@ def load_config() -> Config:
 
     mongo_url = _required("MONGO_URL")
 
+    # MongoDB database name is optional; use a safe default on Render.
     mongo_database = os.getenv(
         "MONGO_DATABASE",
         "telegram_test_bot"
