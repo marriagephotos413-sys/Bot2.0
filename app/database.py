@@ -37,15 +37,29 @@ class MongoDatabase:
     """
 
     def __init__(self):
+        # MongoDB configuration is loaded from Config.
+        # Both values are explicit dataclass fields in config.py.
+        mongo_url = (CONFIG.mongo_url or "").strip()
+        mongo_database = (CONFIG.mongo_database or "").strip()
+
+        if not mongo_url:
+            raise RuntimeError(
+                "MONGO_URL is missing. Add MONGO_URL in Render Environment Variables."
+            )
+
+        if not mongo_database:
+            mongo_database = "telegram_test_bot"
+
         self.client: MongoClient = MongoClient(
-            CONFIG.mongo_url,
+            mongo_url,
             serverSelectionTimeoutMS=8000,
             connectTimeoutMS=8000,
             socketTimeoutMS=20000,
             retryWrites=True,
+            appname="telegram-test-bot",
         )
 
-        self.db: Database = self.client[CONFIG.mongo_database]
+        self.db: Database = self.client[mongo_database]
 
         # ========================================================
         # COLLECTIONS
