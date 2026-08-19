@@ -14,6 +14,7 @@ from .database import db
 from .github import github
 from .telegram_utils import telegram_utils
 from .queue_manager import queue_manager
+from telegram import Update, Message
 
 logger = logging.getLogger(__name__)
 
