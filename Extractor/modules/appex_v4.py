@@ -18,7 +18,7 @@ from bs4 import BeautifulSoup
 from concurrent.futures import ThreadPoolExecutor
 import time 
 from config import PREMIUM_LOGS, join
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytz
 
 
@@ -46,6 +46,7 @@ def decode_base64(encoded_str):
         return decoded_str
     except Exception as e:
         return f"Error decoding string: {e}"
+
 async def fetch(session, url, headers):
     try:
         async with session.get(url, headers=headers) as response:
@@ -61,7 +62,7 @@ async def fetch(session, url, headers):
         return {}
 
 
-async def handle_course(session, api_base, bi, si, sn, topic, hdr1):
+async def handle_course(session, api_base, bi, si, sn, topic, hdr1, extract_type="1"):
     ti = topic.get("topicid")
     tn = topic.get("topic_name")
     
@@ -69,8 +70,31 @@ async def handle_course(session, api_base, bi, si, sn, topic, hdr1):
     r3 = await fetch(session, url, hdr1)
     video_data = sorted(r3.get("data", []), key=lambda x: x.get("id"))  
 
+    # --- 🔴 3 OPTIONS (DATE FILTER) LOGIC START 🔴 ---
+    filtered_videos = []
+    today = datetime.now(india_timezone)
+    for video in video_data:
+        if extract_type == "1":
+            filtered_videos.append(video)
+        else:
+            v_date_str = video.get("live_date") or video.get("created_on") or video.get("date")
+            if v_date_str:
+                try:
+                    v_date = datetime.strptime(v_date_str[:10], "%Y-%m-%d")
+                    v_date = india_timezone.localize(v_date)
+                    days_diff = (today - v_date).days
+                    
+                    if extract_type == "2" and days_diff <= 7: # पिछले 7 दिन
+                        filtered_videos.append(video)
+                    elif extract_type == "3" and days_diff == 0: # आज का कोर्स
+                        filtered_videos.append(video)
+                except:
+                    filtered_videos.append(video) 
+            else:
+                filtered_videos.append(video)
+    # --- 🔴 3 OPTIONS (DATE FILTER) LOGIC END 🔴 ---
     
-    tasks = [process_video(session, api_base, bi, si, sn, ti, tn, video, hdr1) for video in video_data]
+    tasks = [process_video(session, api_base, bi, si, sn, ti, tn, video, hdr1) for video in filtered_videos]
     results = await asyncio.gather(*tasks)
     
     return [line for lines in results if lines for line in lines]
@@ -392,6 +416,24 @@ async def appex_v5_txt(app, message, api, name):
             await editable1.delete(True)
         return
 
+    # --- 🔴 3 OPTIONS WALA MENU START 🔴 ---
+    try:
+        choice_msg = await app.ask(
+            message.chat.id,
+            "📥 **एक्सट्रैक्शन का प्रकार चुनें:**\n\n"
+            "1️⃣ 🟢 पूरा कोर्स (Full Course)\n"
+            "2️⃣ 🟡 पिछले 7 दिन (Last 7 Days)\n"
+            "3️⃣ 🔴 आज का कोर्स (Today Only)\n\n"
+            "👉 *कृपया 1, 2 या 3 लिखकर रिप्लाई करें:*",
+            timeout=60
+        )
+        extract_type = choice_msg.text.strip()
+        if extract_type not in ["1", "2", "3"]:
+            extract_type = "1"
+    except asyncio.TimeoutError:
+        extract_type = "1"
+    # --- 🔴 3 OPTIONS WALA MENU END 🔴 ---
+
     m1 = await message.reply_text("Processing your requested batches...")
 
     # Process each batch ID sequentially like v3
@@ -443,7 +485,7 @@ async def appex_v5_txt(app, message, api, name):
                                 r2 = await fetch(session, f"{api_base}/get/alltopicfrmlivecourseclass?courseid={raw_text2}&subjectid={si}&start=-1", hdr1)
                                 topics = sorted(r2.get("data", []), key=lambda x: x.get("topicid"))
 
-                                tasks = [handle_course(session, api_base, raw_text2, si, sn, t, hdr1) for t in topics]
+                                tasks = [handle_course(session, api_base, raw_text2, si, sn, t, hdr1, extract_type) for t in topics]
                                 all_data = await asyncio.gather(*tasks)
                     
                                 for data in all_data:
@@ -492,7 +534,7 @@ async def appex_v5_txt(app, message, api, name):
                             
         except Exception as e:
             print(f"Error processing batch {raw_text2}: {str(e)}")
-            await message.reply_text(f"⚠️ Failed to process batch {raw_text2}")
+            await message.reply_text(f"⚠️️ Failed to process batch {raw_text2}")
             sanitized_course_name = course_name.replace(':', '_').replace('/', '_')
             await v2_new(app, message, token, userid, hdr1, app_name, raw_text2, api_base, sanitized_course_name, start_time, start_date, end_date, price, input2, m1, m2)
         finally:
