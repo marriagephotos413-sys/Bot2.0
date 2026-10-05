@@ -5,32 +5,32 @@
   "env": {
     "API_ID": {
       "description": "Your Telegram API ID",
-      "value": "24389326",
+      "value": "32823055",
       "required": true
     },
     "API_HASH": {
       "description": "Your Telegram API Hash",
-      "value": "e516c423e3edd76854e1c0741863f6f0",
+      "value": "fa7075903ef41f5b9121f6bcced31223",
       "required": true
     },
     "BOT_TOKEN": {
       "description": "Your Telegram Bot Token",
-      "value": "7601649831:AAEMQ9chNVKZe2hm4wEHN4nmgBd8vqeOvKI",
+      "value": "8808326581:AAE18LH6b1H7h6wyxi9oP519jbHPRoj9OXM",
       "required": true
     },
     "BOT_USERNAME": {
       "description": "Your Bot Username",
-      "value": "@DRM_DawnloadHub_bot",
+      "value": "@Bot2220_bot",
       "required": true
     },
     "OWNER_ID": {
       "description": "Your Telegram User ID (Owner)",
-      "value": "8019643178",
+      "value": "6670611133",
       "required": true
     },
     "SUDO_USERS": {
       "description": "Comma-separated list of sudo users' IDs",
-      "value": "8019643178",
+      "value": "6670611133",
       "required": false
     },
     "CHANNEL_ID": {
