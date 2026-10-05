@@ -35,7 +35,7 @@
     },
     "CHANNEL_ID": {
       "description": "Your channel ID",
-      "value": "-1002483597533",
+      "value": "-1004447784861",
       "required": true
     },
     "MONGO_URL": {
@@ -45,7 +45,7 @@
     },
     "PREMIUM_LOGS": {
       "description": "Flag for premium logs (0 for off, 1 for on)",
-      "value": "-1002694370609",
+      "value": "-1004316395821",
       "required": true
     }
   },
