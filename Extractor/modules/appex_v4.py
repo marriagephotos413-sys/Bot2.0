@@ -21,11 +21,12 @@ from config import PREMIUM_LOGS, join
 from datetime import datetime
 import pytz
 
-
 india_timezone = pytz.timezone('Asia/Kolkata')
 current_time = datetime.now(india_timezone)
 time_new = current_time.strftime("%d-%m-%Y %I:%M %p")
 
+# Rate limit ko bypass karne ke liye (Ek baar mein sirf 3 requests jayengi)
+sem = asyncio.Semaphore(3)
 
 def decrypt(enc):
     enc = b64decode(enc.split(':')[0])
@@ -44,6 +45,7 @@ def decode_base64(encoded_str):
         return decoded_str
     except Exception as e:
         return f"Error decoding string: {e}"
+
 async def fetch(session, url, headers):
     try:
         async with session.get(url, headers=headers) as response:
@@ -78,94 +80,98 @@ async def process_video(session, api_base, bi, si, sn, ti, tn, video, hdr1):
     vn = video.get("Title")
     lines = []
     
-    try:
-        r4 = await fetch(session, f"{api_base}/get/fetchVideoDetailsById?course_id={bi}&video_id={vi}&ytflag=0&folder_wise_course=0", hdr1)
+    # 🔴 429 ERROR FIX: Limit concurrency and add delay
+    async with sem:
+        await asyncio.sleep(0.5)  # 0.5 seconds ka delay har video extraction par
         
-        if not r4 or not r4.get("data"):
-            print(f"Skipping video ID {vi}: No data found.")
+        try:
+            r4 = await fetch(session, f"{api_base}/get/fetchVideoDetailsById?course_id={bi}&video_id={vi}&ytflag=0&folder_wise_course=0", hdr1)
+            
+            if not r4 or not r4.get("data"):
+                print(f"Skipping video ID {vi}: No data found.")
+                return None
+
+            vt = r4.get("data", {}).get("Title", "")
+            vl = r4.get("data", {}).get("download_link", "")
+            fl = r4.get("data", {}).get("video_id", "")
+            
+            if fl:
+                dfl = decrypt(fl)
+                final_link = f"https://youtu.be/{dfl}"
+                lines.append(f"{vt}:{final_link}\n")
+
+            if vl:
+                dvl = decrypt(vl)
+                if ".pdf" not in dvl: 
+                    lines.append(f"{vt}:{dvl}\n")
+                     
+            else:
+                encrypted_links = r4.get("data", {}).get("encrypted_links", [])
+                if encrypted_links:
+                    first_link = encrypted_links[0]
+                    a = first_link.get("path")
+                    k = first_link.get("key")
+                    if a and k:
+                        da = decrypt(a)
+                        k1 = decrypt(k)
+                        k2 = decode_base64(k1)
+                        lines.append(f"{vt}:{da}*{k2}\n")
+                    elif a:
+                        da = decrypt(a)
+                        lines.append(f"{vt}:{da}\n")
+            
+            if "material_type" in r4.get("data", {}):
+                mt = r4["data"]["material_type"]
+                if mt == "PDF":
+                    p1 = r4["data"].get("pdf_link", "")
+                    pk1 = r4["data"].get("pdf_encryption_key", "")
+                    p2 = r4["data"].get("pdf_link2", "")
+                    pk2 = r4["data"].get("pdf2_encryption_key", "")
+                    
+                    if p1 and pk1:
+                        dp1 = decrypt(p1)
+                        depk1 = decrypt(pk1)
+                        if depk1 == "abcdefg":
+                            lines.append(f"{vt}:{dp1}\n")
+                        else:
+                            lines.append(f"{vt}:{dp1}*{depk1}\n")
+                    if p2 and pk2:
+                        dp2 = decrypt(p2)
+                        depk2 = decrypt(pk2)
+                        if depk2 == "abcdefg":
+                            lines.append(f"{vt}:{dp2}\n")
+                        else:
+                            lines.append(f"{vt}:{dp2}*{depk2}\n")
+
+            
+            if "material_type" in r4.get("data", {}):
+                mt = r4["data"]["material_type"]
+                if mt == "VIDEO":
+                    p1 = r4["data"].get("pdf_link", "")
+                    pk1 = r4["data"].get("pdf_encryption_key", "")
+                    p2 = r4["data"].get("pdf_link2", "")
+                    pk2 = r4["data"].get("pdf2_encryption_key", "")
+                    
+                    if p1 and pk1:
+                        dp1 = decrypt(p1)
+                        depk1 = decrypt(pk1)
+                        if depk1 == "abcdefg":
+                            lines.append(f"{vt}:{dp1}\n")
+                        else:
+                            lines.append(f"{vt}:{dp1}*{depk1}\n")
+                    if p2 and pk2:
+                        dp2 = decrypt(p2)
+                        depk2 = decrypt(pk2)
+                        if depk2 == "abcdefg":
+                            lines.append(f"{vt}:{dp2}\n")
+                        else:
+                            lines.append(f"{vt}:{dp2}*{depk2}\n")
+                            
+            return lines
+        
+        except Exception as e:
+            print(f"An error occurred while processing video ID {vi}: {str(e)}")
             return None
-
-        vt = r4.get("data", {}).get("Title", "")
-        vl = r4.get("data", {}).get("download_link", "")
-        fl = r4.get("data", {}).get("video_id", "")
-        
-        if fl:
-            dfl = decrypt(fl)
-            final_link = f"https://youtu.be/{dfl}"
-            lines.append(f"{vt}:{final_link}\n")
-
-        if vl:
-            dvl = decrypt(vl)
-            if ".pdf" not in dvl: 
-                lines.append(f"{vt}:{dvl}\n")
-                 
-        else:
-            encrypted_links = r4.get("data", {}).get("encrypted_links", [])
-            if encrypted_links:
-                first_link = encrypted_links[0]
-                a = first_link.get("path")
-                k = first_link.get("key")
-                if a and k:
-                    da = decrypt(a)
-                    k1 = decrypt(k)
-                    k2 = decode_base64(k1)
-                    lines.append(f"{vt}:{da}*{k2}\n")
-                elif a:
-                    da = decrypt(a)
-                    lines.append(f"{vt}:{da}\n")
-        
-        if "material_type" in r4.get("data", {}):
-            mt = r4["data"]["material_type"]
-            if mt == "PDF":
-                p1 = r4["data"].get("pdf_link", "")
-                pk1 = r4["data"].get("pdf_encryption_key", "")
-                p2 = r4["data"].get("pdf_link2", "")
-                pk2 = r4["data"].get("pdf2_encryption_key", "")
-                
-                if p1 and pk1:
-                    dp1 = decrypt(p1)
-                    depk1 = decrypt(pk1)
-                    if depk1 == "abcdefg":
-                        lines.append(f"{vt}:{dp1}\n")
-                    else:
-                        lines.append(f"{vt}:{dp1}*{depk1}\n")
-                if p2 and pk2:
-                    dp2 = decrypt(p2)
-                    depk2 = decrypt(pk2)
-                    if depk2 == "abcdefg":
-                        lines.append(f"{vt}:{dp2}\n")
-                    else:
-                        lines.append(f"{vt}:{dp2}*{depk2}\n")
-
-        
-        if "material_type" in r4.get("data", {}):
-            mt = r4["data"]["material_type"]
-            if mt == "VIDEO":
-                p1 = r4["data"].get("pdf_link", "")
-                pk1 = r4["data"].get("pdf_encryption_key", "")
-                p2 = r4["data"].get("pdf_link2", "")
-                pk2 = r4["data"].get("pdf2_encryption_key", "")
-                
-                if p1 and pk1:
-                    dp1 = decrypt(p1)
-                    depk1 = decrypt(pk1)
-                    if depk1 == "abcdefg":
-                        lines.append(f"{vt}:{dp1}\n")
-                    else:
-                        lines.append(f"{vt}:{dp1}*{depk1}\n")
-                if p2 and pk2:
-                    dp2 = decrypt(p2)
-                    depk2 = decrypt(pk2)
-                    if depk2 == "abcdefg":
-                        lines.append(f"{vt}:{dp2}\n")
-                    else:
-                        lines.append(f"{vt}:{dp2}*{depk2}\n")
-                        
-        return lines
-    
-    except Exception as e:
-        print(f"An error occurred while processing video ID {vi}: {str(e)}")
-        return None
 
             
             
@@ -286,7 +292,7 @@ async def appex_v5_txt(app, message, api, name):
         }
         
     else:
-        # PERMANENT FIX 1: JSON Decode Error Fixed - Extract correct UserID from Token
+        # 🔴 PERMANENT FIX 1: JSON Decode Error Fixed - Extract correct UserID from Token
         token = raw_text.strip()
         userid = "0"
         try:
@@ -497,7 +503,7 @@ async def appex_v5_txt(app, message, api, name):
                         "🔰 ᴍᴀɪɴᴛᴀɪɴᴇᴅ ʙʏ @UGExtractorPro"
                     )
                 
-                    # PERMANENT FIX 2: File Sending Error Fixed - Prevent 0 byte file error & separate user/log sending
+                    # 🔴 PERMANENT FIX 2: File Sending Error Fixed - Prevent 0 byte file error & separate user/log sending
                     try:
                         if os.path.exists(filename1) and os.path.getsize(filename1) > 0:
                             # Send to user first
