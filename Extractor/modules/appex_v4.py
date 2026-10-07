@@ -22,8 +22,6 @@ from datetime import datetime
 import pytz
 
 
-
-
 india_timezone = pytz.timezone('Asia/Kolkata')
 current_time = datetime.now(india_timezone)
 time_new = current_time.strftime("%d-%m-%Y %I:%M %p")
@@ -288,8 +286,19 @@ async def appex_v5_txt(app, message, api, name):
         }
         
     else:
-        userid = "extracted_userid_from_token"
-        token = raw_text
+        # PERMANENT FIX 1: JSON Decode Error Fixed - Extract correct UserID from Token
+        token = raw_text.strip()
+        userid = "0"
+        try:
+            if "." in token:
+                payload_part = token.split(".")[1]
+                payload_part += "=" * ((4 - len(payload_part) % 4) % 4)
+                decoded_payload = base64.b64decode(payload_part).decode("utf-8")
+                token_json = json.loads(decoded_payload)
+                userid = str(token_json.get("userid", token_json.get("id", "0")))
+        except Exception as e:
+            print(f"Token decode issue: {e}")
+
         hdr1 = {
             "Client-Service": "Appx",
             "source": "website",
@@ -300,13 +309,23 @@ async def appex_v5_txt(app, message, api, name):
         
     scraper = cloudscraper.create_scraper() 
     try:
-        mc1 = scraper.get(f"{api_base}/get/mycoursev2?userid={userid}", headers=hdr1).json()
+        response = scraper.get(f"{api_base}/get/mycoursev2?userid={userid}", headers=hdr1)
+        
+        if response.status_code != 200:
+            error_text = response.text[:200]
+            return await message.reply_text(
+                f"❌ **API Error ({response.status_code})**\n\n"
+                f"Server ne JSON ke bajaye error diya hai. Shayad aapka **Token Expire** ho gaya hai ya URL galat hai.\n\n"
+                f"**Server Response:**\n`{error_text}...`"
+            )
+            
+        mc1 = response.json()
         
     except json.JSONDecodeError as e:
         error_msg = (
-            "❌ <b>An error occurred during extraction</b>\n\n"
-            f"Error details: <code>{str(e)}</code>\n\n"
-            "Please try again or contact support."
+            "❌ **Invalid Response Format**\n\n"
+            f"Server ne HTML page return kiya hai. Cloudflare block ya invalid token ho sakta hai.\n\n"
+            f"Response Text: `{(response.text[:150] if 'response' in locals() else 'N/A')}`"
         )
         return await message.reply_text(error_msg)
     except Exception as e:
@@ -478,13 +497,29 @@ async def appex_v5_txt(app, message, api, name):
                         "🔰 ᴍᴀɪɴᴛᴀɪɴᴇᴅ ʙʏ @UGExtractorPro"
                     )
                 
+                    # PERMANENT FIX 2: File Sending Error Fixed - Prevent 0 byte file error & separate user/log sending
                     try:
-                        await app.send_document(message.chat.id, filename1, caption=caption)
-                        await app.send_document(PREMIUM_LOGS, filename1, caption=caption)
-                        
+                        if os.path.exists(filename1) and os.path.getsize(filename1) > 0:
+                            # Send to user first
+                            try:
+                                await app.send_document(message.chat.id, filename1, caption=caption)
+                            except Exception as user_err:
+                                print(f"Error sending to user: {user_err}")
+                                await message.reply_text(f"⚠️ Document bhejne mein error (User): `{str(user_err)}`")
+
+                            # Send to logs
+                            try:
+                                if PREMIUM_LOGS:
+                                    await app.send_document(PREMIUM_LOGS, filename1, caption=caption)
+                            except Exception as log_err:
+                                print(f"Error sending to logs: {log_err}")
+                                
+                        else:
+                            await message.reply_text(f"⚠️ Batch `{raw_text2}` mein koi videos/PDFs nahi mile. File khali hai.")
+
                     except Exception as e:
                         print(f"An error occurred while sending the document: {str(e)}")
-                        await message.reply_text(f"⚠️ Error sending document for batch {raw_text2}")
+                        await message.reply_text(f"⚠️ Error sending document for batch {raw_text2}\n**Reason:** `{str(e)}`")
                     
                     finally:
                         if os.path.exists(filename1):
